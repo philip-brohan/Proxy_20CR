@@ -1,0 +1,26 @@
+name: ProxyR
+channels:
+  - default
+dependencies:
+# Basics
+  - python=3.7
+  - matplotlib=3.2.*
+# ML model building 
+  - tensorflow=2.2.*
+# Allow packages only available via pip
+  - pip
+# Philip's libraries
+  - pip:
+    - git+ssh://git@github.com/philip-brohan/IRData.git@bb3664ba91a9cf189dec56633e0f75effa01b95a
+    - git+ssh://git@github.com/philip-brohan/Meteorographica.git@819cae3e6a543b9bff959fea8bcd1572363d9f36
+#
+# Optional below this
+#
+# Tensorflow diagnostics and profiling
+  - tensorboard=2.2.*
+  - pip:
+    - tensorboard_plugin_profile
+# Code formatter
+  - black=20.*
+# Documentation processor
+  - sphinx=3.*.*
