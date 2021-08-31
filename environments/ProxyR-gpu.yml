@@ -1,4 +1,4 @@
-name: ProxyR
+name: ProxyR-gpu
 channels:
   - default
 dependencies:
@@ -6,7 +6,7 @@ dependencies:
   - python=3.7
   - matplotlib=3.2.*
 # ML model building 
-  - tensorflow=2.4.*
+  - tensorflow-gpu=2.4.*
 # Allow packages only available via pip
   - pip
 # Philip's libraries
