@@ -17,6 +17,6 @@ dependencies:
   - pip
   - pip:
   # Philip's library for Reanalysis data handling
-    - git+ssh://git@github.com/philip-brohan/IRData.git@bb3664ba91a9cf189dec56633e0f75effa01b95a
+    - git+ssh://git@github.com/philip-brohan/IRData.git@9642bd9f6b182f5ce3734bc36ba82abd7d7f778d
   # Needed by TensorBoard
     - tensorboard_plugin_profile
