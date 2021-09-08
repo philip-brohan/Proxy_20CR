@@ -1,6 +1,6 @@
 name: ProxyR
 channels:
-  - default
+  - defaults
   - conda-forge
 dependencies:
 # Basics
@@ -9,7 +9,6 @@ dependencies:
   - cmocean=2.0
 # ML model building and diagnostics
   - tensorflow=2.4.*
-  - tensorboard=2.4.*
 # Code formatter
   - black=20.*
 # Documentation processor

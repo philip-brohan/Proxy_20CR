@@ -1,4 +1,4 @@
-name: ProxyR-gpu
+name: ProxyR-eigen
 channels:
   - defaults
   - conda-forge
@@ -8,7 +8,7 @@ dependencies:
   - iris=3.0.*
   - cmocean=2.0
 # ML model building and diagnostics
-  - tensorflow-gpu=2.4.*
+  - tensorflow-eigen=2.4.*
 # Code formatter
   - black=20.*
 # Documentation processor
