@@ -8,6 +8,8 @@ dependencies:
   - iris=3.0.1
   - cmocean=2.0
 # ML model building and diagnostics
+# Note, depending on your system, you might get faster training by changing
+#   this to tensorflow-gpu, or tensorflow-mkl or tensorflow-eigen.
   - tensorflow=2.4.*
 # Code formatter
   - black=20.*
@@ -18,5 +20,5 @@ dependencies:
   - pip:
   # Philip's library for Reanalysis data handling
     - git+ssh://git@github.com/philip-brohan/IRData.git@9642bd9f6b182f5ce3734bc36ba82abd7d7f778d
-  # Needed by TensorBoard
+  # Needed by TensorBoard for profiling
     - tensorboard_plugin_profile

@@ -14,7 +14,7 @@ These scripts will only work in a environment with the appropriate software and 
 
 .. literalinclude:: ../environments/ProxyR.yml
 
-Install `anaconda or miniconda <https://docs.conda.io/en/latest/>`_, `create and activate the environment in that yaml file <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-envs>`_, and all the scripts in this repository should run successfully. 
+Install `anaconda or miniconda <https://docs.conda.io/en/latest/>`_, `create and activate the environment in that yaml file <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-envs>`_, and all the scripts in this repository should run successfully.
 
 The project documentation (these web pages) are included in the repository (in the `docs directory <https://github.com/philip-brohan/Proxy_20CR/tree/main/docs>`_). The documentation is in `reStructuredText <https://en.wikipedia.org/wiki/ReStructuredText>`_ format, and uses the `Sphinx <https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html>`_ documentation generator.
 
