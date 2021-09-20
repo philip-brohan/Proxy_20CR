@@ -7,6 +7,7 @@ dependencies:
   - python=3.9.*
   - iris=3.0.*
   - cmocean=2.0
+  - parallel
 # ML model building and diagnostics
   - tensorflow-gpu=2.4.*
 # Code formatter

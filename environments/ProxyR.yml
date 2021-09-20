@@ -7,6 +7,7 @@ dependencies:
   - python=3.7
   - iris=3.0.1
   - cmocean=2.0
+  - parallel
 # ML model building and diagnostics
 # Note, depending on your system, you might get faster training by changing
 #   this to tensorflow-gpu, or tensorflow-mkl or tensorflow-eigen.
