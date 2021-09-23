@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Convolutional Variational autoencoder for 20CR2c MSLP
+# Convolutional Autoencoder for 20CR2c MSLP
 
 import os
 import sys
@@ -23,7 +23,7 @@ strategy = tf.distribute.get_strategy()
 
 # Load the model specification
 sys.path.append("%s/." % os.path.dirname(__file__))
-from autoencoderModel import DCVAE
+from autoencoderModel import DCAE
 from autoencoderModel import train_step
 from autoencoderModel import compute_loss
 
@@ -32,7 +32,7 @@ sys.path.append("%s/../PRMSL_dataset" % os.path.dirname(__file__))
 from makeDataset import getDataset
 
 # How big is the latent space?
-latent_dim = 100
+latent_dim = 20
 
 # How many images to use?
 nTrainingImages = 2568  # Max is 2568
@@ -60,11 +60,11 @@ testData = testData.batch(batchSize)
 
 # Instantiate the model
 with strategy.scope():
-    autoencoder = DCVAE(latent_dim)
+    autoencoder = DCAE(latent_dim)
     optimizer = tf.keras.optimizers.Adam(1e-4)
     # If we are doing a restart, load the weights
     if args.epoch > 0:
-        weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
+        weights_dir = ("%s/Proxy_20CR/models/DCAE_single_PRMSL/" + "Epoch_%04d") % (
             os.getenv("SCRATCH"),
             args.epoch - 1,
         )
@@ -80,9 +80,7 @@ history["val_loss"] = []
 
 
 def save_state(model, epoch, loss):
-    save_dir = (
-        "%s/ML_ten_year_rainfall/models/autoencoder/original/" + "Epoch_%04d"
-    ) % (
+    save_dir = ("%s/Proxy_20CR/models/DCAE_single_PRMSL/" + "Epoch_%04d") % (
         os.getenv("SCRATCH"),
         epoch,
     )
@@ -95,47 +93,23 @@ def save_state(model, epoch, loss):
     pickle.dump(history, open(history_file, "wb"))
 
 
-# keeping the random vector constant for generation (prediction) so
-# it will be easier to see the improvement.
-# random_vector_for_generation = tf.random.normal(
-#    shape=[num_examples_to_generate, latent_dim])
-
-# def generate_and_save_images(model, epoch, test_sample):
-#  mean, logvar = model.encode(test_sample)
-#  z = model.reparameterize(mean, logvar)
-#  predictions = model.sample(z)
-#  fig = plt.figure(figsize=(4, 4))
-
-#  for i in range(predictions.shape[0]):
-#    plt.subplot(4, 4, i + 1)
-#    plt.imshow(predictions[i, :, :, 0], cmap='gray')
-#    plt.axis('off')
-
-# tight_layout minimizes the overlap between 2 sub-plots
-#  plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
-#  plt.show()
-
-# Pick a sample of the test set for generating output images
-# assert batch_size >= num_examples_to_generate
-# for test_batch in test_dataset.take(1):
-#  test_sample = test_batch[0:num_examples_to_generate, :, :, :]
-
-# generate_and_save_images(model, 0, test_sample)
-
 for epoch in range(nEpochs):
     start_time = time.time()
     for train_x in trainingData:
         train_step(autoencoder, train_x, optimizer)
     end_time = time.time()
 
-    loss = tf.keras.metrics.Mean()
+    train_loss = tf.keras.metrics.Mean()
+    for test_x in trainingData:
+        train_loss(compute_loss(autoencoder, test_x))
+    train_elbo = train_loss.result()
+    test_loss = tf.keras.metrics.Mean()
     for test_x in testData:
-        loss(compute_loss(autoencoder, test_x))
-    elbo = -loss.result()
-    # display.clear_output(wait=False)
+        test_loss(compute_loss(autoencoder, test_x))
+    test_elbo = test_loss.result()
     print(
-        "Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}".format(
-            epoch, elbo, end_time - start_time
+        "Epoch: {}, Train Loss: {}, Test Loss: {}, time: {}".format(
+            epoch, train_elbo, test_elbo, end_time - start_time
         )
     )
-    save_state(autoencoder, epoch, elbo)
+    save_state(autoencoder, epoch, test_elbo)

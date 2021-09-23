@@ -1,16 +1,20 @@
-# Specify a Deep Convolutional Variational AutoEncoder
+# Specify a Deep Convolutional AutoEncoder
 #  for the 20CR2c PRMSL fields
 
-# Heavily based on the TF tutorial at:
+# Based on the TF tutorial at:
 #   https://www.tensorflow.org/tutorials/generative/cvae
 
+# This version is not variational
+
 import tensorflow as tf
-import numpy as np
+
+# import numpy as np
+# import sys
 
 
-class DCVAE(tf.keras.Model):
+class DCAE(tf.keras.Model):
     def __init__(self, latent_dim):
-        super(DCVAE, self).__init__()
+        super(DCAE, self).__init__()
         self.latent_dim = latent_dim
         self.encoder = tf.keras.Sequential(
             [
@@ -23,7 +27,7 @@ class DCVAE(tf.keras.Model):
                 ),
                 tf.keras.layers.Flatten(),
                 # No activation
-                tf.keras.layers.Dense(latent_dim + latent_dim),
+                tf.keras.layers.Dense(latent_dim),
             ]
         )
 
@@ -53,47 +57,26 @@ class DCVAE(tf.keras.Model):
             ]
         )
 
-    @tf.function
-    def sample(self, eps=None):
-        if eps is None:
-            eps = tf.random.normal(shape=(100, self.latent_dim))
-        return self.decode(eps, apply_sigmoid=True)
-
     def encode(self, x):
-        mean, logvar = tf.split(self.encoder(x), num_or_size_splits=2, axis=1)
-        return mean, logvar
+        encoded = self.encoder(x)
+        return encoded
 
-    def reparameterize(self, mean, logvar):
-        eps = tf.random.normal(shape=mean.shape)
-        return eps * tf.exp(logvar * 0.5) + mean
+    def decode(self, z):
+        decoded = self.decoder(z)
+        return decoded
 
-    def decode(self, z, apply_sigmoid=False):
-        logits = self.decoder(z)
-        if apply_sigmoid:
-            probs = tf.sigmoid(logits)
-            return probs
-        return logits
-
-
-def log_normal_pdf(sample, mean, logvar, raxis=1):
-    log2pi = tf.math.log(2.0 * np.pi)
-    return tf.reduce_sum(
-        -0.5 * ((sample - mean) ** 2.0 * tf.exp(-logvar) + logvar + log2pi), axis=raxis
-    )
+    def call(self, x):
+        return self.decode(self.encode(x))
 
 
 def compute_loss(model, x):
-    mean, logvar = model.encode(x)
-    z = model.reparameterize(mean, logvar)
-    x_logit = model.decode(z)
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
-    logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    logpz = log_normal_pdf(z, 0.0, 0.0)
-    logqz_x = log_normal_pdf(z, mean, logvar)
-    return -tf.reduce_mean(logpx_z + logpz - logqz_x)
+    latent = model.encode(x)
+    encoded = model.decode(latent)
+    rmse = tf.keras.metrics.mean_squared_error(encoded, x)
+    return rmse
 
 
-@tf.function
+@tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
 def train_step(model, x, optimizer):
     """Executes one training step and returns the loss.
 
