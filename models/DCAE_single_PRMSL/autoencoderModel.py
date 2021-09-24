@@ -8,10 +8,6 @@
 
 import tensorflow as tf
 
-# import numpy as np
-# import sys
-
-
 class DCAE(tf.keras.Model):
     def __init__(self, latent_dim):
         super(DCAE, self).__init__()
@@ -19,12 +15,23 @@ class DCAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 1)),
+                tf.keras.layers.Dropout(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=32, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=5, kernel_size=3, strides=(2, 2), activation="relu"
                 ),
+                tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=64, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=10, kernel_size=3, strides=(2, 2), activation="relu"
                 ),
+                tf.keras.layers.SpatialDropout2D(0.2),
+                tf.keras.layers.Conv2D(
+                    filters=30, kernel_size=3, strides=(2, 2), activation="relu"
+                ),
+                tf.keras.layers.SpatialDropout2D(0.2),
+                tf.keras.layers.Conv2D(
+                    filters=90, kernel_size=3, strides=(2, 2), activation="relu"
+                ),
+                tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
                 tf.keras.layers.Dense(latent_dim),
@@ -34,17 +41,24 @@ class DCAE(tf.keras.Model):
         self.decoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
-                tf.keras.layers.Dense(units=20 * 40 * 32, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(20, 40, 32)),
+                tf.keras.layers.Dense(units=5 * 10 * 90, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 10, 90)),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=64,
+                    filters=30,
                     kernel_size=3,
                     strides=2,
                     padding="same",
                     activation="relu",
                 ),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=32,
+                    filters=10,
+                    kernel_size=3,
+                    strides=2,
+                    padding="same",
+                    activation="relu",
+                ),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=5,
                     kernel_size=3,
                     strides=2,
                     padding="same",
@@ -52,7 +66,7 @@ class DCAE(tf.keras.Model):
                 ),
                 # No activation
                 tf.keras.layers.Conv2DTranspose(
-                    filters=1, kernel_size=3, strides=1, padding="same"
+                    filters=1, kernel_size=3, strides=2, padding="same"
                 ),
             ]
         )

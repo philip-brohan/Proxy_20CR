@@ -32,7 +32,7 @@ sys.path.append("%s/../PRMSL_dataset" % os.path.dirname(__file__))
 from makeDataset import getDataset
 
 # How big is the latent space?
-latent_dim = 20
+latent_dim = 100
 
 # How many images to use?
 nTrainingImages = 2568  # Max is 2568
@@ -51,7 +51,7 @@ bufferSize = 1000  # Untested
 batchSize = 32  # Arbitrary
 
 # Set up the training data
-trainingData = getDataset(purpose="training", nImages=nTrainingImages)
+trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(10)
 trainingData = trainingData.shuffle(bufferSize).batch(batchSize)
 
 # Set up the test data
