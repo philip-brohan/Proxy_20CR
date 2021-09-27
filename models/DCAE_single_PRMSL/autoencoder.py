@@ -39,7 +39,7 @@ nTrainingImages = 2568  # Max is 2568
 nTestImages = 285  # Max is 285
 
 # How many epochs to train for
-nEpochs = 100
+nEpochs = 500
 # Length of an epoch - if None, same as nTrainingImages
 nImagesInEpoch = None
 

@@ -15,43 +15,46 @@ class DCAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 1)),
-                tf.keras.layers.Dropout(0.2),
+                #tf.keras.layers.Dropout(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=5, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=5, kernel_size=3, strides=(2, 2), padding='same', activation="relu"
                 ),
-                tf.keras.layers.SpatialDropout2D(0.2),
+                #tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=10, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=5, kernel_size=3, strides=(2, 2), padding='same', activation="relu"
                 ),
-                tf.keras.layers.SpatialDropout2D(0.2),
+                #tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=30, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=10, kernel_size=3, strides=(2, 2), padding='same', activation="relu"
                 ),
-                tf.keras.layers.SpatialDropout2D(0.2),
+                #tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=90, kernel_size=3, strides=(2, 2), activation="relu"
+                    filters=20, kernel_size=3, strides=(2, 2), padding='same', activation="relu"
                 ),
-                tf.keras.layers.SpatialDropout2D(0.2),
+                #tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
                 tf.keras.layers.Dense(latent_dim),
+                #tf.keras.layers.BatchNormalization(),
+                #tf.keras.layers.GaussianNoise(2.0),
             ]
         )
 
         self.decoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
-                tf.keras.layers.Dense(units=5 * 10 * 90, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(5, 10, 90)),
+                #tf.keras.layers.InputLayer(input_shape=(5*10*20)),
+                tf.keras.layers.Dense(units=5 * 10 * 20, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 10, 20)),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=30,
+                    filters=10,
                     kernel_size=3,
                     strides=2,
                     padding="same",
                     activation="relu",
                 ),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=10,
+                    filters=5,
                     kernel_size=3,
                     strides=2,
                     padding="same",

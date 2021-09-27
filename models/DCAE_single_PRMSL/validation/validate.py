@@ -140,7 +140,7 @@ for y in [0.505, 0.01]:
         None,
         tf.reshape(generated, [80, 160]),
         land=lm,
-        label="Test: %d" % count,
+        label="Generator only",
     )
 
 fig.savefig("tst.png")
