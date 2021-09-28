@@ -12,6 +12,7 @@ dependencies:
 # Note, depending on your system, you might get faster training by changing
 #   this to tensorflow-gpu, or tensorflow-mkl or tensorflow-eigen.
   - tensorflow=2.4.*
+  - tensorflow-probability=0.8.*
 # Code formatter
   - black=20.*
 # Documentation processor

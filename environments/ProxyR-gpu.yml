@@ -10,6 +10,7 @@ dependencies:
   - parallel
 # ML model building and diagnostics
   - tensorflow-gpu=2.4.*
+  - tensorflow-probability=0.8.*
 # Code formatter
   - black=20.*
 # Documentation processor
