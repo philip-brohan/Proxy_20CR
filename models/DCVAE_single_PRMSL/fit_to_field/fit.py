@@ -44,22 +44,24 @@ load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked
 load_status.assert_existing_objects_matched()
 
-for t_in in trainingData:
+count=0
+for t_in in testData:
     if count == 0:
         latent = tf.random.normal(shape=(1, args.latent_dim))
         target = tf.reshape(t_in, [1, 80, 160, 1])
 
-        def decodeFit():
+        def decodeFit(latent):
             decoded = autoencoder.decode(latent)
             return tf.reduce_mean(tf.keras.metrics.mean_squared_error(decoded, target))
 
-        best_latent = tfp.math.minimize(
-            decodeFit,
-            optimizer=tf.optimizers.Adam(learning_rate=0.1),
-            trainable_variables=[latent],
+        loss = tfp.math.minimize(
+            lambda: decodeFit(latent),
+            num_steps=1000,
+            optimizer=tf.optimizers.Adam(learning_rate=0.0001),
         )
-        print(best_latent)
-        sys.exit(0)
+        print(loss)
+        break
+        #sys.exit(0)
 
 fig = Figure(
     figsize=(19.2, 10.8),
@@ -76,7 +78,7 @@ canvas = FigureCanvas(fig)
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
 lm = get_land_mask()
 
-encoded = autoencoder.decode(best_latent)
+encoded = autoencoder.decode(latent)
 ax_plot = fig.add_axes([0.01, 0.01, 0.98, 0.98])
 ax_plot.set_aspect("auto")
 ax_plot.set_axis_off()

@@ -35,8 +35,8 @@ from makeDataset import getDataset
 latent_dim = 100
 
 # How many images to use?
-nTrainingImages = 2568  # Max is 2568
-nTestImages = 285  # Max is 285
+nTrainingImages = 10782  # Max is 10782
+nTestImages = 1198  # Max is 1198
 
 # How many epochs to train for
 nEpochs = 500
@@ -51,7 +51,7 @@ bufferSize = 1000  # Untested
 batchSize = 32  # Arbitrary
 
 # Set up the training data
-trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(10)
+trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(5)
 trainingData = trainingData.shuffle(bufferSize).batch(batchSize)
 
 # Set up the test data

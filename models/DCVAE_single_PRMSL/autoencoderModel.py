@@ -6,7 +6,7 @@
 
 import tensorflow as tf
 import numpy as np
-
+import sys
 
 class DCVAE(tf.keras.Model):
     def __init__(self, latent_dim):
@@ -99,7 +99,10 @@ class DCVAE(tf.keras.Model):
         return decoded
 
     def call(self, x):
-        return self.decode(self.encode(x))
+        mean, logvar = self.encode(x)
+        latent = self.reparameterize(mean, logvar)
+        encoded = self.decode(latent)
+        return encoded
 
     def reparameterize(self, mean, logvar):
         eps = tf.random.normal(shape=mean.shape)
@@ -117,10 +120,13 @@ def compute_loss(model, x):
     mean, logvar = model.encode(x)
     latent = model.reparameterize(mean, logvar)
     encoded = model.decode(latent)
-    rmse = tf.keras.metrics.mean_squared_error(encoded, x)
+    rmse = tf.reduce_mean(tf.keras.metrics.mean_squared_error(encoded, x),axis=[1,2])
+    #print(rmse)
     logpz = log_normal_pdf(latent, 0.0, 0.0)
+    #print(logpz)
+    #sys.exit(0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse, logpz, logqz_x)
+    return (rmse*10000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
@@ -132,5 +138,6 @@ def train_step(model, x, optimizer):
     """
     with tf.GradientTape() as tape:
         (rmse, logpz, logqz_x) = compute_loss(model, x)
-    gradients = tape.gradient(rmse, model.trainable_variables)
+        metric = tf.reduce_mean(rmse-logpz+logqz_x)
+    gradients = tape.gradient(metric, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
