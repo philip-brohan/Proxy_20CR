@@ -73,7 +73,7 @@ for variable in ["prmsl"]:
                     variable,
                 )
                 f.write(cmd)
-        current_day = current_day + datetime.timedelta(hours=126)
+        current_day = current_day + datetime.timedelta(hours=30)
         count += 1
 
 f.close()
