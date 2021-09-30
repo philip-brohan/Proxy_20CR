@@ -18,7 +18,7 @@ def get_land_mask():
     return to_analysis_grid(mask)
 
 
-def plot_PRMSL(ax, t_in, t_out, land=None, label=None):
+def plot_PRMSL(ax, t_in, t_out, land=None, label=None,linewidths=[1,1]):
     if land is None:
         land = get_land_mask()
     lats = land.coord("latitude").points
@@ -28,28 +28,40 @@ def plot_PRMSL(ax, t_in, t_out, land=None, label=None):
     )
     # 20CR2c data
     if t_in is not None:
-        CS = ax.contour(
-            lons,
-            lats,
-            t_in.numpy(),
-            colors="red",
-            linewidths=1.0,
-            alpha=1.0,
-            levels=np.arange(-3, 3, 0.3),
-            zorder=20,
-        )
+        t_in = tf.squeeze(t_in)
+        if tf.rank(t_in)==2:
+            t_in = tf.expand_dims(t_in,axis=0)
+        t_list = tf.unstack(t_in,axis=0)
+        for t_in in t_list:
+            CS = ax.contour(
+                lons,
+                lats,
+                t_in.numpy(),
+                colors="red",
+                linewidths=linewidths[0],
+                linestyles='solid',
+                alpha=1.0,
+                levels=np.arange(-3, 3, 0.3),
+                zorder=20,
+            )
     # Encoder output
     if t_out is not None:
-        CS = ax.contour(
-            lons,
-            lats,
-            t_out.numpy(),
-            colors="blue",
-            linewidths=1.0,
-            alpha=1.0,
-            # levels=numpy.arange(870,1050,10),
-            zorder=30,
-        )
+        t_out = tf.squeeze(t_out)
+        if tf.rank(t_out)==2:
+            t_out = tf.expand_dims(t_out,axis=0)
+        t_list = tf.unstack(t_out,axis=0)
+        for t_out in t_list:
+            CS = ax.contour(
+                lons,
+                lats,
+                t_out.numpy(),
+                colors="blue",
+                linewidths=linewidths[1],
+                linestyles='solid',
+                alpha=1.0,
+                levels=np.arange(-3, 3, 0.3),
+                zorder=30,
+            )
     ax.text(
         -175,
         -85,
@@ -64,3 +76,26 @@ def plot_PRMSL(ax, t_in, t_out, land=None, label=None):
         clip_on=True,
         zorder=40,
     )
+
+def plot_scatter(ax,t_in,t_out,d_max=3,d_min=-3):
+    t_in = tf.squeeze(t_in)
+    if tf.rank(t_in)!=2:
+        raise Exception("Unsupported input data shape")
+    t_out = tf.squeeze(t_out)
+    if tf.rank(t_out)==2:
+        t_out = tf.expand_dims(t_out,axis=0)
+    t_list = tf.unstack(t_out,axis=0)
+    for t_out in t_list:
+        ax.scatter(x=t_in.numpy().flatten(),
+                   y=t_out.numpy().flatten(),
+                   c='black',
+                   alpha=0.25,
+                   marker='.',
+                   s=2)
+    ax.set(ylabel='Original', 
+           xlabel='Encoded')
+    ax.grid(color='black',
+            alpha=0.2,
+            linestyle='-', 
+            linewidth=0.5)
+

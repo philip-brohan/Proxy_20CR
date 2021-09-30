@@ -29,6 +29,7 @@ args = parser.parse_args()
 sys.path.append("%s/." % os.path.dirname(__file__))
 from plot_prmsl_comparison import get_land_mask
 from plot_prmsl_comparison import plot_PRMSL
+from plot_prmsl_comparison import plot_scatter
 
 # Load the data source provider
 sys.path.append("%s/../../PRMSL_dataset" % os.path.dirname(__file__))
@@ -52,7 +53,7 @@ load_status.assert_existing_objects_matched()
 
 
 fig = Figure(
-    figsize=(28.8, 10.8),
+    figsize=(35.6, 10.8),
     dpi=100,
     facecolor=(0.88, 0.88, 0.88, 1),
     edgecolor=None,
@@ -71,28 +72,33 @@ count = 0
 rnd = random.randint(1, 2567)
 for t_in in trainingData:
     if count == 0:
-        encoded = autoencoder(tf.reshape(t_in, [1, 80, 160, 1]), training=False)
+        encoded = autoencoder.sample_call(tf.reshape(t_in, [1, 80, 160, 1]), size=15)
         ax_plot = fig.add_axes([0.01, 0.505, 0.32, 0.485])
         ax_plot.set_aspect("auto")
         ax_plot.set_axis_off()
         plot_PRMSL(
             ax_plot,
-            tf.reshape(t_in, [80, 160]),
-            tf.reshape(encoded, [80, 160]),
+            t_in,
+            encoded,
             land=lm,
             label="Training: %d" % count,
+            linewidths=[1,0.2],
         )
+        ax_scatter = fig.add_axes([0.34, 0.505, 0.32, 0.485])
+        ax_plot.set_aspect("auto")
+        plot_scatter(ax_plot,t_in,encoded)
     if count == rnd:
-        encoded = autoencoder(tf.reshape(t_in, [1, 80, 160, 1]), training=False)
+        encoded = autoencoder.sample_call(tf.reshape(t_in, [1, 80, 160, 1]), size=15)
         ax_plot = fig.add_axes([0.01, 0.01, 0.32, 0.485])
         ax_plot.set_aspect("auto")
         ax_plot.set_axis_off()
         plot_PRMSL(
             ax_plot,
-            tf.reshape(t_in, [80, 160]),
-            tf.reshape(encoded, [80, 160]),
+            t_in,
+            encoded,
             land=lm,
             label="Training: %d" % count,
+            linewidths=[1,0.2],
         )
         break
     count += 1
@@ -102,28 +108,30 @@ count = 0
 rnd = random.randint(1, 284)
 for t_in in testData:
     if count == 0:
-        encoded = autoencoder(tf.reshape(t_in, [1, 80, 160, 1]), training=False)
+        encoded = autoencoder.sample_call(tf.reshape(t_in, [1, 80, 160, 1]), size=15)
         ax_plot = fig.add_axes([0.34, 0.505, 0.32, 0.485])
         ax_plot.set_aspect("auto")
         ax_plot.set_axis_off()
         plot_PRMSL(
             ax_plot,
-            tf.reshape(t_in, [80, 160]),
-            tf.reshape(encoded, [80, 160]),
+            t_in,
+            encoded,
             land=lm,
             label="Test: %d" % count,
+            linewidths=[1,0.2],
         )
     if count == rnd:
-        encoded = autoencoder(tf.reshape(t_in, [1, 80, 160, 1]), training=False)
+        encoded = autoencoder.sample_call(tf.reshape(t_in, [1, 80, 160, 1]), size=15)
         ax_plot = fig.add_axes([0.34, 0.01, 0.32, 0.485])
         ax_plot.set_aspect("auto")
         ax_plot.set_axis_off()
         plot_PRMSL(
             ax_plot,
-            tf.reshape(t_in, [80, 160]),
-            tf.reshape(encoded, [80, 160]),
+            t_in,
+            encoded,
             land=lm,
             label="Test: %d" % count,
+            linewidths=[1,0.2],
         )
         break
     count += 1

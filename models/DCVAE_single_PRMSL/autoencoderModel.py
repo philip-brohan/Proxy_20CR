@@ -8,6 +8,7 @@ import tensorflow as tf
 import numpy as np
 import sys
 
+
 class DCVAE(tf.keras.Model):
     def __init__(self, latent_dim):
         super(DCVAE, self).__init__()
@@ -108,6 +109,24 @@ class DCVAE(tf.keras.Model):
         eps = tf.random.normal(shape=mean.shape)
         return eps * tf.exp(logvar * 0.5) + mean
 
+    # Decode each member of the batch several times, to make a sample
+    #  returns a 4d tensor (size, batch, y, x)
+    def sample_decode(self, mean, logvar, size=100):
+        encoded = []
+        eps = tf.random.normal(shape=(size, self.latent_dim))
+        mean = tf.unstack(mean, axis=0)
+        logvar = tf.unstack(logvar, axis=0)
+        for batchI in range(len(mean)):
+            latent = eps * tf.exp(logvar[batchI] * 0.5) + mean[batchI]
+            encoded.append(self.decode(latent))
+        return tf.stack(encoded, axis=0)
+
+    # Autoencode each member of the batch several times, to make a sample
+    def sample_call(self, x, size=100):
+        mean, logvar = self.encode(x)
+        encoded = self.sample_decode(mean, logvar, size=size)
+        return encoded
+
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
     log2pi = tf.math.log(2.0 * np.pi)
@@ -120,13 +139,13 @@ def compute_loss(model, x):
     mean, logvar = model.encode(x)
     latent = model.reparameterize(mean, logvar)
     encoded = model.decode(latent)
-    rmse = tf.reduce_mean(tf.keras.metrics.mean_squared_error(encoded, x),axis=[1,2])
-    #print(rmse)
+    rmse = tf.reduce_mean(tf.keras.metrics.mean_squared_error(encoded, x), axis=[1, 2])
+    # print(rmse)
     logpz = log_normal_pdf(latent, 0.0, 0.0)
-    #print(logpz)
-    #sys.exit(0)
+    # print(logpz)
+    # sys.exit(0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse*10000, logpz, logqz_x)
+    return (rmse * 10000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
@@ -138,6 +157,6 @@ def train_step(model, x, optimizer):
     """
     with tf.GradientTape() as tape:
         (rmse, logpz, logqz_x) = compute_loss(model, x)
-        metric = tf.reduce_mean(rmse-logpz+logqz_x)
+        metric = tf.reduce_mean(rmse - logpz + logqz_x)
     gradients = tape.gradient(metric, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
