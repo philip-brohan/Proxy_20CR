@@ -2,16 +2,14 @@
 
 # Plot a validation figure for the autoencoder.
 
-# Three groups of tests:
-#  1) Samples from the training dataset
-#  2) Samples from the test dataset
-#  3) Generated samples from random points in the latent space
+# Three tests:
+#  1) Sample from the training dataset
+#  2) Sample from the test dataset
+#  3) Generated samples from random point in the latent space
 #
-# In each case, half the points are fixed (the same each time this is run),
-#  and half are random samples (different each time).
 
 import tensorflow as tf
-import os
+import os 
 import sys
 import random
 
@@ -91,7 +89,7 @@ for t_in in trainingData:
                 encoded[:, :, :, :, tp],
                 land=lm,
                 label="%d, %s" % (count, ("-12h", "-6h", "0h", "+6h", "+12h")[tp]),
-                linewidths=[0.5, 0.05],
+                linewidths=[0.2, 0.2],
             )
             ax_scatter = fig.add_axes(
                 [
@@ -136,7 +134,7 @@ for t_in in testData:
                 encoded[:, :, :, :, tp],
                 land=lm,
                 label="%d, %s" % (count, ("-12h", "-6h", "0h", "+6h", "+12h")[tp]),
-                linewidths=[0.5, 0.05],
+                linewidths=[0.2, 0.2],
             )
             ax_scatter = fig.add_axes(
                 [

@@ -20,7 +20,7 @@ import sys
 sys.path.append("%s/../../lib/" % os.path.dirname(__file__))
 from normalise import normalise_t2m
 from normalise import normalise_wind
-from normalise import normalise_prmsl
+from normalise import normalise_prmsl_anomaly
 from geometry import to_analysis_grid
 
 import argparse
@@ -64,7 +64,27 @@ if args.opfile is None:
 if not os.path.isdir(os.path.dirname(args.opfile)):
     os.makedirs(os.path.dirname(args.opfile))
 
-# Load and standardise data
+# Load the normals
+def load_normal(year,month,day,hour):
+    if month==2 and day==29:
+        day=28
+    prevt = datetime.datetime(
+        year, month, day, hour
+    )
+    prevcsd = iris.load_cube(
+        "/data/users/hadpb/20CR/version_3.4.1/normal/prmsl.nc",
+        iris.Constraint(
+            time=iris.time.PartialDateTime(
+                year=1981, month=prevt.month, day=prevt.day, hour=prevt.hour
+            )
+        ),
+    )
+    coord_s = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+    prevcsd.coord("latitude").coord_system = coord_s
+    prevcsd.coord("longitude").coord_system = coord_s
+    return(prevcsd)
+
+    # Load and standardise data
 def load_hour(year, month, day, hour):
     ic = twcr.load(
         args.variable,
@@ -78,7 +98,9 @@ def load_hour(year, month, day, hour):
     elif args.variable == "air.2m":
         ic.data = normalise_t2m(ic.data)
     elif args.variable == "prmsl":
-        ic.data = normalise_prmsl(ic.data)
+        n = load_normal(year, month, day, hour)
+        n = n.regrid(ic,iris.analysis.Linear())
+        ic.data = normalise_prmsl_anomaly(ic.data,n.data)
     else:
         raise ValueError("Variable %s is not supported" % args.variable)
     ict = tf.convert_to_tensor(ic.data, numpy.float32)
@@ -91,6 +113,9 @@ for offset in [-12, -6, 0, 6, 12]:
         args.year, args.month, args.day, args.hour
     ) + datetime.timedelta(hours=offset)
     daily.append(load_hour(dte.year, dte.month, dte.day, dte.hour))
+
+for idx in [0,1,3,4]:
+    daily[idx]=(daily[idx]-daily[2])
 
 ict = tf.stack(daily, axis=2)
 

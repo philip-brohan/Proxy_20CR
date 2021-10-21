@@ -20,15 +20,7 @@ class DCVAE(tf.keras.Model):
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 5)),
                 # tf.keras.layers.Dropout(0.2),
                 tf.keras.layers.Conv2D(
-                    filters=5,
-                    kernel_size=3,
-                    strides=(2, 2),
-                    padding="same",
-                    activation="relu",
-                ),
-                # tf.keras.layers.SpatialDropout2D(0.2),
-                tf.keras.layers.Conv2D(
-                    filters=5,
+                    filters=10,
                     kernel_size=3,
                     strides=(2, 2),
                     padding="same",
@@ -51,6 +43,14 @@ class DCVAE(tf.keras.Model):
                     activation="relu",
                 ),
                 # tf.keras.layers.SpatialDropout2D(0.2),
+                tf.keras.layers.Conv2D(
+                    filters=40,
+                    kernel_size=3,
+                    strides=(2, 2),
+                    padding="same",
+                    activation="relu",
+                ),
+                # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
                 tf.keras.layers.Dense(latent_dim + latent_dim),
@@ -63,24 +63,24 @@ class DCVAE(tf.keras.Model):
             [
                 tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
                 # tf.keras.layers.InputLayer(input_shape=(5*10*20)),
-                tf.keras.layers.Dense(units=5 * 10 * 20, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(5, 10, 20)),
+                tf.keras.layers.Dense(units=5 * 10 * 40, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 10, 40)),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=20,
+                    kernel_size=3,
+                    strides=2,
+                    padding="same",
+                    activation="relu",
+                ),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=510,
+                    kernel_size=3,
+                    strides=2,
+                    padding="same",
+                    activation="relu",
+                ),
                 tf.keras.layers.Conv2DTranspose(
                     filters=10,
-                    kernel_size=3,
-                    strides=2,
-                    padding="same",
-                    activation="relu",
-                ),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=5,
-                    kernel_size=3,
-                    strides=2,
-                    padding="same",
-                    activation="relu",
-                ),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=5,
                     kernel_size=3,
                     strides=2,
                     padding="same",
@@ -159,6 +159,6 @@ def train_step(model, x, optimizer):
     """
     with tf.GradientTape() as tape:
         (rmse, logpz, logqz_x) = compute_loss(model, x)
-        metric = tf.reduce_mean(rmse - logpz + logqz_x)
+        metric = tf.reduce_mean(rmse)# - logpz + logqz_x)
     gradients = tape.gradient(metric, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))

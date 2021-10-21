@@ -58,3 +58,16 @@ def unnormalise_prmsl(p):
     res *= 3000
     res += 101325
     return res
+
+def normalise_prmsl_anomaly(p,c):
+    res = numpy.copy(p)
+    res -= c
+    res /= 3000
+    return res
+
+
+def unnormalise_prmsl_anomaly(p,c):
+    res = numpy.copy(p)
+    res *= 3000
+    res += c
+    return res
