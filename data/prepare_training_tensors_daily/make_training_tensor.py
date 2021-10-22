@@ -72,7 +72,7 @@ def load_normal(year,month,day,hour):
         year, month, day, hour
     )
     prevcsd = iris.load_cube(
-        "/data/users/hadpb/20CR/version_3.4.1/normal/prmsl.nc",
+        "%s/20CR/version_3.4.1/normal/prmsl.nc" % os.getenv('DATADIR'),
         iris.Constraint(
             time=iris.time.PartialDateTime(
                 year=1981, month=prevt.month, day=prevt.day, hour=prevt.hour
@@ -114,10 +114,21 @@ for offset in [-12, -6, 0, 6, 12]:
     ) + datetime.timedelta(hours=offset)
     daily.append(load_hour(dte.year, dte.month, dte.day, dte.hour))
 
+# Change forecast and hindcast fields to differences 
 for idx in [0,1,3,4]:
     daily[idx]=(daily[idx]-daily[2])
 
+# Rescale difference fields so all have about the same variance
+for idx in [0,4]:
+    daily[idx] *= 2
+for idx in [1,3]:
+    daily[idx] *= 3
+
 ict = tf.stack(daily, axis=2)
+
+# Rescale everything *approximately* onto the 0-1 range
+ict += 1.5
+ict /= 2.5
 
 # Write to file
 sict = tf.io.serialize_tensor(ict)

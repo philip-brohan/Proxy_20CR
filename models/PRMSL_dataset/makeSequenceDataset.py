@@ -10,14 +10,14 @@ def load_MSLP_tensor(file_name):
     imt = tf.io.parse_tensor(sict, np.float32)
     imt = tf.reshape(imt, [80, 160, 5])
     # Rescale so that all components have about the same variance
-    imt = tf.unstack(imt,axis=2)
-    imt[1] *= 3
-    imt[3] *= 3
-    imt[0] *= 2
-    imt[4] *= 2
-    imt = tf.stack(imt,axis=2)
-    imt += 1.5
-    imt /= 2.5
+#    imt = tf.unstack(imt,axis=2)
+#    imt[1] *= 3
+#    imt[3] *= 3
+#    imt[0] *= 2
+#    imt[4] *= 2
+#    imt = tf.stack(imt,axis=2)
+#    imt += 1.5
+#    imt /= 2.5
     return imt
 
 
