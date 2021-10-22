@@ -58,7 +58,7 @@ m_width = (margin * 5 / 8) / f_width
 m_height = margin / f_height
 fig = Figure(
     figsize=(f_width, f_height),
-    dpi=600,
+    dpi=250,
     facecolor=(0.88, 0.88, 0.88, 1),
     edgecolor=None,
     linewidth=0.0,
@@ -89,7 +89,10 @@ for t_in in trainingData:
                 encoded[:, :, :, :, tp],
                 land=lm,
                 label="%d, %s" % (count, ("-12h", "-6h", "0h", "+6h", "+12h")[tp]),
-                linewidths=[0.2, 0.2],
+                linewidths=[0.2, 0.05],
+                d_min=-0.2,
+                d_max=1.2,
+                c_space=0.1,
             )
             ax_scatter = fig.add_axes(
                 [
@@ -105,8 +108,8 @@ for t_in in trainingData:
                 ax_scatter,
                 t_in[:, :, tp],
                 encoded[:, :, :, :, tp],
-                d_min=-1.5,
-                d_max=1.0,
+                d_min=-0.2,
+                d_max=1.2,
             )
         break
     count += 1
@@ -134,7 +137,10 @@ for t_in in testData:
                 encoded[:, :, :, :, tp],
                 land=lm,
                 label="%d, %s" % (count, ("-12h", "-6h", "0h", "+6h", "+12h")[tp]),
-                linewidths=[0.2, 0.2],
+                linewidths=[0.2, 0.05],
+                d_min=-0.2,
+                d_max=1.2,
+                c_space=0.1,
             )
             ax_scatter = fig.add_axes(
                 [
@@ -149,8 +155,8 @@ for t_in in testData:
                 ax_scatter,
                 t_in[:, :, tp],
                 encoded[:, :, :, :, tp],
-                d_min=-1.5,
-                d_max=1.0,
+                d_min=-0.2,
+                d_max=1.2,
             )
         break
     count += 1

@@ -27,9 +27,9 @@ def plot_PRMSL(
     land=None,
     label=None,
     linewidths=[1, 1],
-    d_max=3,
-    d_min=-3,
-    c_space=0.3,
+    d_max=1,
+    d_min=0,
+    c_space=0.1,
 ):
     if land is None:
         land = get_land_mask()

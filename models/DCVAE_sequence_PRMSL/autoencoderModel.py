@@ -147,7 +147,7 @@ def compute_loss(model, x):
     # print(logpz)
     # sys.exit(0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse * 10000, logpz, logqz_x)
+    return (rmse * 100000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
@@ -159,6 +159,6 @@ def train_step(model, x, optimizer):
     """
     with tf.GradientTape() as tape:
         (rmse, logpz, logqz_x) = compute_loss(model, x)
-        metric = tf.reduce_mean(rmse)# - logpz + logqz_x)
+        metric = tf.reduce_mean(rmse - logpz + logqz_x)
     gradients = tape.gradient(metric, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))

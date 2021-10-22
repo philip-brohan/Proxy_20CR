@@ -16,6 +16,8 @@ def load_MSLP_tensor(file_name):
     imt[0] *= 2
     imt[4] *= 2
     imt = tf.stack(imt,axis=2)
+    imt += 1.5
+    imt /= 2.5
     return imt
 
 
