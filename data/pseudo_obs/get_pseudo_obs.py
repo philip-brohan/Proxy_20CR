@@ -105,7 +105,7 @@ exact = tf.squeeze(trilinear.interpolate(fields, tf.cast(t_obs, "float32")))
 approx = exact + tf.random.normal(
     shape=exact.shape, mean=0.0, stddev=2.0 / 30, dtype=tf.float32
 )
-ict = tf.stack((exact, approx))
+ict = tf.stack((t_lats, t_lons, t_dte, exact, approx))
 
 # Save the pseudo-obs
 sict = tf.io.serialize_tensor(ict)
