@@ -21,7 +21,6 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch", type=int, required=False, default=25)
-parser.add_argument("--latent_dim", help="Epoch", type=int, required=False, default=20)
 args = parser.parse_args()
 
 sys.path.append("%s/." % os.path.dirname(__file__))
@@ -40,7 +39,7 @@ testData = getDataset(purpose="test")
 sys.path.append("%s/.." % os.path.dirname(__file__))
 from autoencoderModel import DCVAE
 
-autoencoder = DCVAE(args.latent_dim)
+autoencoder = DCVAE()
 weights_dir = ("%s/Proxy_20CR/models/DCVAE_sequence_PRMSL/" + "Epoch_%04d") % (
     os.getenv("SCRATCH"),
     args.epoch - 1,
@@ -162,7 +161,7 @@ for t_in in testData:
     count += 1
 
 # Plot one example of a generated field
-eps = tf.random.normal(shape=(1, args.latent_dim))
+eps = tf.random.normal(shape=(1, autoencoder.latent_dim))
 generated = autoencoder.decode(eps)
 for tp in range(5):  # Each time-slice
     ax_plot = fig.add_axes(
