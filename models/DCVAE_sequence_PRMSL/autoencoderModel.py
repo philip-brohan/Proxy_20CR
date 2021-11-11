@@ -10,11 +10,10 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-
 class DCVAE(tf.keras.Model):
-    def __init__(self, latent_dim):
+    def __init__(self):
         super(DCVAE, self).__init__()
-        self.latent_dim = latent_dim
+        self.latent_dim = 200
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 5)),
@@ -24,15 +23,7 @@ class DCVAE(tf.keras.Model):
                     kernel_size=3,
                     strides=(2, 2),
                     padding="same",
-                    activation="relu",
-                ),
-                # tf.keras.layers.SpatialDropout2D(0.2),
-                tf.keras.layers.Conv2D(
-                    filters=10,
-                    kernel_size=3,
-                    strides=(2, 2),
-                    padding="same",
-                    activation="relu",
+                    activation="elu",
                 ),
                 # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
@@ -40,7 +31,7 @@ class DCVAE(tf.keras.Model):
                     kernel_size=3,
                     strides=(2, 2),
                     padding="same",
-                    activation="relu",
+                    activation="elu",
                 ),
                 # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
@@ -48,12 +39,20 @@ class DCVAE(tf.keras.Model):
                     kernel_size=3,
                     strides=(2, 2),
                     padding="same",
-                    activation="relu",
+                    activation="elu",
+                ),
+                # tf.keras.layers.SpatialDropout2D(0.2),
+                tf.keras.layers.Conv2D(
+                    filters=80,
+                    kernel_size=3,
+                    strides=(2, 2),
+                    padding="same",
+                    activation="elu",
                 ),
                 # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
-                tf.keras.layers.Dense(latent_dim + latent_dim),
+                tf.keras.layers.Dense(self.latent_dim + self.latent_dim),
                 # tf.keras.layers.BatchNormalization(),
                 # tf.keras.layers.GaussianNoise(2.0),
             ]
@@ -61,30 +60,30 @@ class DCVAE(tf.keras.Model):
 
         self.decoder = tf.keras.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
+                tf.keras.layers.InputLayer(input_shape=(self.latent_dim,)),
                 # tf.keras.layers.InputLayer(input_shape=(5*10*20)),
-                tf.keras.layers.Dense(units=5 * 10 * 40, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(5, 10, 40)),
+                tf.keras.layers.Dense(units=5 * 10 * 80, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 10, 80)),
+                tf.keras.layers.Conv2DTranspose(
+                    filters=40,
+                    kernel_size=3,
+                    strides=2,
+                    padding="same",
+                    activation="elu",
+                ),
                 tf.keras.layers.Conv2DTranspose(
                     filters=20,
                     kernel_size=3,
                     strides=2,
                     padding="same",
-                    activation="relu",
-                ),
-                tf.keras.layers.Conv2DTranspose(
-                    filters=510,
-                    kernel_size=3,
-                    strides=2,
-                    padding="same",
-                    activation="relu",
+                    activation="elu",
                 ),
                 tf.keras.layers.Conv2DTranspose(
                     filters=10,
                     kernel_size=3,
                     strides=2,
                     padding="same",
-                    activation="relu",
+                    activation="elu",
                 ),
                 # No activation
                 tf.keras.layers.Conv2DTranspose(

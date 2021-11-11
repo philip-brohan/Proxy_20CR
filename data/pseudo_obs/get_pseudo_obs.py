@@ -13,7 +13,6 @@ import datetime
 
 import tensorflow as tf
 from tensorflow_graphics.math.interpolation import trilinear
-import numpy as np
 import pandas as pd
 
 try:
@@ -76,7 +75,7 @@ def load_hour(year, month, day, hour, variable=args.variable, member=1):
     n = load_normal(variable, year, month, day, hour)
     n = n.regrid(ic, iris.analysis.Linear())
     ic.data = normalise_prmsl_anomaly(ic.data, n.data)
-    ict = tf.convert_to_tensor(ic.data, np.float32)
+    ict = tf.convert_to_tensor(ic.data, tf.float32)
     return ict
 
 
@@ -98,10 +97,13 @@ o_dtm = pd.to_datetime(obs["UID"].str.slice(0, 10), format="%Y%m%d%H")
 dts = dte - datetime.timedelta(hours=12)
 t_dte = ((o_dtm - dts) / pd.Timedelta(hours=1)).values / 24
 
+t_lats = tf.convert_to_tensor(t_lats, tf.float32)
+t_lons = tf.convert_to_tensor(t_lons, tf.float32)
+t_dte = tf.convert_to_tensor(t_dte, tf.float32)
 t_obs = tf.stack((t_lats, t_lons, t_dte), axis=1)
 t_obs = tf.expand_dims(t_obs, 0)
 
-exact = tf.squeeze(trilinear.interpolate(fields, tf.cast(t_obs, "float32")))
+exact = tf.squeeze(trilinear.interpolate(fields, t_obs))
 approx = exact + tf.random.normal(
     shape=exact.shape, mean=0.0, stddev=2.0 / 30, dtype=tf.float32
 )

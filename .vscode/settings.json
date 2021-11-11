@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./models/PRMSL_dataset",
+        "./models/DCVAE_sequence_PRMSL/validation"
+    ]
+}

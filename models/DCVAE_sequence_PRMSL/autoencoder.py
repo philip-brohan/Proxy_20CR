@@ -33,8 +33,6 @@ from autoencoderModel import compute_loss
 sys.path.append("%s/../PRMSL_dataset" % os.path.dirname(__file__))
 from makeSequenceDataset import getDataset
 
-# How big is the latent space?
-latent_dim = 100
 
 # How many images to use?
 nTrainingImages = 5989  # Max is 5989
@@ -62,7 +60,7 @@ testData = testData.batch(batchSize)
 
 # Instantiate the model
 with strategy.scope():
-    autoencoder = DCVAE(latent_dim)
+    autoencoder = DCVAE()
     optimizer = tf.keras.optimizers.Adam(1e-4)
     # If we are doing a restart, load the weights
     if args.epoch > 0:
