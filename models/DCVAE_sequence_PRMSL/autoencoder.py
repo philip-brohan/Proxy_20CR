@@ -36,6 +36,7 @@ from makeSequenceDataset import getDataset
 
 # How many images to use?
 nTrainingImages = 5989  # Max is 5989
+nValidationImages = 1000  # Max is 5989
 nTestImages = 665  # Max is 665
 
 # How many epochs to train for
@@ -51,6 +52,7 @@ bufferSize = 1000  # Untested
 batchSize = 32  # Arbitrary
 
 # Set up the training data
+validationData = getDataset(purpose="training", nImages=nValidationImages).batch(batchSize)
 trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(5)
 trainingData = trainingData.shuffle(bufferSize).batch(batchSize)
 
@@ -102,7 +104,7 @@ for epoch in range(nEpochs):
     train_rmse = tf.keras.metrics.Mean()
     train_logpz = tf.keras.metrics.Mean()
     train_logqz_x = tf.keras.metrics.Mean()
-    for test_x in trainingData:
+    for test_x in validationData:
         (rmse, logpz, logqz_x) = compute_loss(autoencoder, test_x)
         train_rmse(rmse)
         train_logpz(logpz)
@@ -110,7 +112,7 @@ for epoch in range(nEpochs):
     test_rmse = tf.keras.metrics.Mean()
     test_logpz = tf.keras.metrics.Mean()
     test_logqz_x = tf.keras.metrics.Mean()
-    for test_x in trainingData:
+    for test_x in testData:
         (rmse, logpz, logqz_x) = compute_loss(autoencoder, test_x)
         test_rmse(rmse)
         test_logpz(logpz)
@@ -120,4 +122,5 @@ for epoch in range(nEpochs):
     print("logpz: {}, {}".format(train_logpz.result(), test_logpz.result()))
     print("logqz_x: {}, {}".format(train_logqz_x.result(), test_logqz_x.result()))
     print("time: {}".format(end_time - start_time))
-    save_state(autoencoder, epoch, test_rmse.result())
+    if epoch%10==0:
+        save_state(autoencoder, epoch, test_rmse.result())

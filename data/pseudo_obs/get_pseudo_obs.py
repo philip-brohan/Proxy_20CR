@@ -109,6 +109,9 @@ approx = exact + tf.random.normal(
 )
 ict = tf.stack((t_lats, t_lons, t_dte, exact, approx))
 
+# Filter out the nans (bad lat/lon/time)
+ict = tf.boolean_mask(ict,~tf.math.is_nan(ict[4,:]),axis=1)
+
 # Save the pseudo-obs
 sict = tf.io.serialize_tensor(ict)
 tf.io.write_file(opfile, sict)

@@ -13,7 +13,7 @@ import sys
 class DCVAE(tf.keras.Model):
     def __init__(self):
         super(DCVAE, self).__init__()
-        self.latent_dim = 200
+        self.latent_dim = 100
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 5)),
@@ -146,7 +146,7 @@ def compute_loss(model, x):
     # print(logpz)
     # sys.exit(0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse * 100000, logpz, logqz_x)
+    return (rmse*1000000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
