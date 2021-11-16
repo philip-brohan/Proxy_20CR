@@ -42,26 +42,37 @@ weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked
 load_status.assert_existing_objects_matched()
+# We are using it in inference mode
+autoencoder.decoder.trainable=False
+for layer in autoencoder.decoder.layers:
+        layer.trainable = False
+autoencoder.decoder.compile()
+
 
 count=0
 for t_in in testData:
     if count == 0:
-        latent = tf.random.normal(shape=(1, autoencoder.latent_dim))
-        target = tf.reshape(t_in, [1, 80, 160, 1])
-
-        def decodeFit(latent):
+        latent = tf.Variable(tf.random.normal(shape=(1, autoencoder.latent_dim)))
+        target = tf.constant(tf.reshape(t_in, [1, 80, 160, 1]))
+        #print(latent)
+        def decodeFit():
             decoded = autoencoder.decode(latent)
             return tf.reduce_mean(tf.keras.metrics.mean_squared_error(decoded, target))
 
         loss = tfp.math.minimize(
-            lambda: decodeFit(latent),
+            decodeFit,
+            trainable_variables=[latent],
             num_steps=1000,
-            optimizer=tf.optimizers.Adam(learning_rate=0.0001),
+            optimizer=tf.optimizers.Adam(learning_rate=0.05),
         )
         print(loss)
         break
         #sys.exit(0)
 
+#latent = tf.Variable(tf.random.normal(shape=(1, autoencoder.latent_dim)))
+#load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
+# Check the load worked
+#load_status.assert_existing_objects_matched()
 fig = Figure(
     figsize=(19.2, 10.8),
     dpi=100,
