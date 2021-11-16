@@ -9,9 +9,9 @@
 import tensorflow as tf
 
 class DCAE(tf.keras.Model):
-    def __init__(self, latent_dim):
+    def __init__(self):
         super(DCAE, self).__init__()
-        self.latent_dim = latent_dim
+        self.latent_dim = 100
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 1)),
@@ -34,7 +34,7 @@ class DCAE(tf.keras.Model):
                 #tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
-                tf.keras.layers.Dense(latent_dim),
+                tf.keras.layers.Dense(self.latent_dim),
                 #tf.keras.layers.BatchNormalization(),
                 #tf.keras.layers.GaussianNoise(2.0),
             ]
@@ -42,7 +42,7 @@ class DCAE(tf.keras.Model):
 
         self.decoder = tf.keras.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
+                tf.keras.layers.InputLayer(input_shape=(self.latent_dim,)),
                 #tf.keras.layers.InputLayer(input_shape=(5*10*20)),
                 tf.keras.layers.Dense(units=5 * 10 * 20, activation=tf.nn.relu),
                 tf.keras.layers.Reshape(target_shape=(5, 10, 20)),

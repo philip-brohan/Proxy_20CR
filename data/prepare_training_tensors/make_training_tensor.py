@@ -6,7 +6,13 @@
 # Serialise it and store it on $SCRATCH.
 
 import tensorflow as tf
-import numpy
+import numpy as np
+
+# Going to do external parallelism - run this on one core
+tf.config.threading.set_inter_op_parallelism_threads(1)
+import dask
+dask.config.set(scheduler='single-threaded')
+
 
 import IRData.twcr as twcr
 import iris
@@ -82,7 +88,7 @@ else:
     raise ValueError("Source %s is not supported" % args.source)
 
 # Convert to Tensor
-ict = tf.convert_to_tensor(ic.data, numpy.float32)
+ict = tf.convert_to_tensor(ic.data, np.float32)
 
 # Write to file
 sict = tf.io.serialize_tensor(ict)

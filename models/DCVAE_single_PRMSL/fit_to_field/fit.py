@@ -17,8 +17,7 @@ from matplotlib.figure import Figure
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--epoch", help="Epoch", type=int, required=False, default=25)
-parser.add_argument("--latent_dim", help="Epoch", type=int, required=False, default=20)
+parser.add_argument("--epoch", help="Epoch", type=int, required=True)
 args = parser.parse_args()
 
 sys.path.append("%s/../validation" % os.path.dirname(__file__))
@@ -35,10 +34,10 @@ testData = getDataset(purpose="test")
 sys.path.append("%s/.." % os.path.dirname(__file__))
 from autoencoderModel import DCVAE
 
-autoencoder = DCVAE(args.latent_dim)
+autoencoder = DCVAE()
 weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
     os.getenv("SCRATCH"),
-    args.epoch - 1,
+    args.epoch,
 )
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked
@@ -47,7 +46,7 @@ load_status.assert_existing_objects_matched()
 count=0
 for t_in in testData:
     if count == 0:
-        latent = tf.random.normal(shape=(1, args.latent_dim))
+        latent = tf.random.normal(shape=(1, autoencoder.latent_dim))
         target = tf.reshape(t_in, [1, 80, 160, 1])
 
         def decodeFit(latent):

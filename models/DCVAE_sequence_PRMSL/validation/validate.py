@@ -42,7 +42,7 @@ from autoencoderModel import DCVAE
 autoencoder = DCVAE()
 weights_dir = ("%s/Proxy_20CR/models/DCVAE_sequence_PRMSL/" + "Epoch_%04d") % (
     os.getenv("SCRATCH"),
-    args.epoch - 1,
+    args.epoch,
 )
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked

@@ -22,8 +22,7 @@ from matplotlib.figure import Figure
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--epoch", help="Epoch", type=int, required=False, default=25)
-parser.add_argument("--latent_dim", help="Epoch", type=int, required=False, default=20)
+parser.add_argument("--epoch", help="Epoch", type=int, required=True)
 args = parser.parse_args()
 
 sys.path.append("%s/." % os.path.dirname(__file__))
@@ -42,10 +41,10 @@ testData = getDataset(purpose="test")
 sys.path.append("%s/.." % os.path.dirname(__file__))
 from autoencoderModel import DCVAE
 
-autoencoder = DCVAE(args.latent_dim)
+autoencoder = DCVAE()
 weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
     os.getenv("SCRATCH"),
-    args.epoch - 1,
+    args.epoch,
 )
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked
@@ -138,7 +137,7 @@ for t_in in testData:
 
 # Plot two examples of generated fields
 for y in [0.505, 0.01]:
-    eps = tf.random.normal(shape=(1, args.latent_dim))
+    eps = tf.random.normal(shape=(1, autoencoder.latent_dim))
     generated = autoencoder.decode(eps)
     ax_plot = fig.add_axes([0.67, y, 0.32, 0.485])
     ax_plot.set_aspect("auto")
@@ -151,4 +150,4 @@ for y in [0.505, 0.01]:
         label="Generator only",
     )
 
-fig.savefig("tst.png")
+fig.savefig("comparison.png")

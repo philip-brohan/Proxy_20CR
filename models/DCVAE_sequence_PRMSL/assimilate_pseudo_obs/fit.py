@@ -74,6 +74,7 @@ from geometry import to_analysis_grid
 from normalise import load_normal
 from normalise import normalise_prmsl_anomaly
 
+from scipy.optimize import minimize
 
 def load_hour(year, month, day, hour, variable=args.variable, member=1):
     ic = twcr.load(
@@ -99,7 +100,7 @@ from autoencoderModel import DCVAE
 autoencoder = DCVAE()
 weights_dir = ("%s/Proxy_20CR/models/DCVAE_sequence_PRMSL/" + "Epoch_%04d") % (
     os.getenv("SCRATCH"),
-    args.epoch - 1,
+    args.epoch,
 )
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
 # Check the load worked
@@ -110,6 +111,11 @@ autoencoder.trainable=False
 # Random start point
 latent = tf.Variable(tf.random.normal(shape=(1, autoencoder.latent_dim)))
 #print(latent)
+#mean, logvar = autoencoder.encode(target)
+#latent = autoencoder.reparameterize(mean, logvar)
+latent = latent.numpy()
+ltorig = latent.copy()
+
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
     log2pi = tf.math.log(2.0 * 3.141592)
@@ -117,8 +123,10 @@ def log_normal_pdf(sample, mean, logvar, raxis=1):
         -0.5 * ((sample - mean) ** 2.0 * tf.exp(-logvar) + logvar + log2pi), axis=raxis
     )
 # Function to calculate the fit of the generated field to the pseudo-obs
-def decodeFit():
-    decoded = autoencoder.decode(latent)
+def decodeFit(latent):
+    ltloc = tf.constant(latent,shape=(1, autoencoder.latent_dim),dtype=tf.float32)
+    decoded = autoencoder.decode(ltorig)
+    mean, logvar = autoencoder.encode(decoded)
     #print(decoded.shape)
     # convert field from diffs back to (normalised) pressure
     #df = tf.unstack(decoded, axis=2)
@@ -137,21 +145,29 @@ def decodeFit():
     #print(pot_t)
     #return tf.reduce_mean(tf.keras.metrics.mean_squared_error(at_proxies, pot_t))
     rmse = tf.reduce_mean(tf.keras.metrics.mean_squared_error(decoded[:,:,:,2],target))
-    logpz = log_normal_pdf(latent, 0.0, 0.0)
-    return (rmse-logpz)
+    logpz = log_normal_pdf(ltloc, 0.0, 0.0)
+    logqz_x = log_normal_pdf(ltloc, mean, logvar)
+    tf.print(rmse)
+    tf.print(logpz)
+    tf.print(logqz_x)
+    #return tf.reduce_mean(rmse*1000000 - logpz + logqz_x)
+    return(rmse)
 
 
 #print(decodeFit())
 #print(latent)
 #sys.exit(0)
 
-loss = tfp.math.minimize(
-    decodeFit,
-    trainable_variables=[latent],
-    num_steps=10000,
-    optimizer=tf.optimizers.Adam(learning_rate=0.1),
-)
-print(loss)
+#loss = tfp.math.minimize(
+#    decodeFit,
+#    trainable_variables=[latent],
+#    num_steps=100,
+#    optimizer=tf.optimizers.Adam(learning_rate=0.0001),
+#)
+#print(loss)
+
+res = minimize(decodeFit, latent, method='nelder-mead',options={'maxiter':1})
+latent = tf.constant(res.x,shape=(1, autoencoder.latent_dim))
 
 # Plot the reconstructed and target fields
 sys.path.append("%s/../validation" % dirName)

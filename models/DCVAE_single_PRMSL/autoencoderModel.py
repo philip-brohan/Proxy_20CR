@@ -10,21 +10,13 @@ import sys
 
 
 class DCVAE(tf.keras.Model):
-    def __init__(self, latent_dim):
+    def __init__(self):
         super(DCVAE, self).__init__()
-        self.latent_dim = latent_dim
+        self.latent_dim = 100
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 1)),
                 # tf.keras.layers.Dropout(0.2),
-                tf.keras.layers.Conv2D(
-                    filters=5,
-                    kernel_size=3,
-                    strides=(2, 2),
-                    padding="same",
-                    activation="relu",
-                ),
-                # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Conv2D(
                     filters=5,
                     kernel_size=3,
@@ -49,9 +41,17 @@ class DCVAE(tf.keras.Model):
                     activation="relu",
                 ),
                 # tf.keras.layers.SpatialDropout2D(0.2),
+                tf.keras.layers.Conv2D(
+                    filters=40,
+                    kernel_size=3,
+                    strides=(2, 2),
+                    padding="same",
+                    activation="relu",
+                ),
+                # tf.keras.layers.SpatialDropout2D(0.2),
                 tf.keras.layers.Flatten(),
                 # No activation
-                tf.keras.layers.Dense(latent_dim + latent_dim),
+                tf.keras.layers.Dense(self.latent_dim + self.latent_dim),
                 # tf.keras.layers.BatchNormalization(),
                 # tf.keras.layers.GaussianNoise(2.0),
             ]
@@ -59,19 +59,19 @@ class DCVAE(tf.keras.Model):
 
         self.decoder = tf.keras.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
+                tf.keras.layers.InputLayer(input_shape=(self.latent_dim,)),
                 # tf.keras.layers.InputLayer(input_shape=(5*10*20)),
-                tf.keras.layers.Dense(units=5 * 10 * 20, activation=tf.nn.relu),
-                tf.keras.layers.Reshape(target_shape=(5, 10, 20)),
+                tf.keras.layers.Dense(units=5 * 10 * 40, activation=tf.nn.relu),
+                tf.keras.layers.Reshape(target_shape=(5, 10, 40)),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=10,
+                    filters=20,
                     kernel_size=3,
                     strides=2,
                     padding="same",
                     activation="relu",
                 ),
                 tf.keras.layers.Conv2DTranspose(
-                    filters=5,
+                    filters=10,
                     kernel_size=3,
                     strides=2,
                     padding="same",
@@ -145,7 +145,7 @@ def compute_loss(model, x):
     # print(logpz)
     # sys.exit(0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse * 10000, logpz, logqz_x)
+    return (rmse * 1000000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
