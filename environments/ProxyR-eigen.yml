@@ -26,5 +26,7 @@ dependencies:
     - git+ssh://git@github.com/philip-brohan/IRData.git@861608a4ac43a8ef44a949ccb8c781e60c94d8c7
   # Needed by TensorBoard for profiling
     - tensorboard_plugin_profile
+  # For bilinear interpolation
+    - tensorflow-addons==0.14
   # For trilinear interpolation
     - tensorflow-graphics

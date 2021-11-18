@@ -18,7 +18,7 @@ def get_land_mask():
     return to_analysis_grid(mask)
 
 
-def plot_PRMSL(ax, t_in, t_out, land=None, label=None,linewidths=[1,1]):
+def plot_PRMSL(ax, t_in, t_out, obs=None, obs_c = 'black', obs_cmap='RdBu',land=None, label=None,linewidths=[1,1]):
     if land is None:
         land = get_land_mask()
     lats = land.coord("latitude").points
@@ -62,6 +62,17 @@ def plot_PRMSL(ax, t_in, t_out, land=None, label=None,linewidths=[1,1]):
                 levels=np.arange(-3, 3, 0.3),
                 zorder=30,
             )
+   # Observations
+    if obs is not None:
+        obs = tf.squeeze(obs)
+        ax.scatter((obs[:,1].numpy()/160)*360-180,
+                (obs[:,0].numpy()/80)*180-90,
+                s=3.0,
+                c=obs_c,
+                cmap=obs_cmap,
+                marker='o',
+                alpha=1.0,
+                zorder=10)
     ax.text(
         -175,
         -85,
