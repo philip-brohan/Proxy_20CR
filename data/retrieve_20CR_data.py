@@ -12,12 +12,22 @@ for year in [1903,1916]:
     # 2c is in 1 year batches so month and day don't matter
     dte = datetime.datetime(year, 1, 1)
     twcr.fetch("prmsl", dte, version="2c")
+    twcr.fetch("air.2m", dte, version="2c")
+    twcr.fetch("tsfc", dte, version="2c")
+    twcr.fetch("uwnd.10m", dte, version="2c")
+    twcr.fetch("vwnd.10m", dte, version="2c")
+    twcr.fetch("prate", dte, version="2c")
     twcr.fetch("observations", dte, version="2c")
 
-for year in range(1969, 2009):
+for year in range(1969, 2010):
     # 2c is in 1 year batches so month and day don't matter
     dte = datetime.datetime(year, 1, 1)
     twcr.fetch("prmsl", dte, version="2c")
+    twcr.fetch("air.2m", dte, version="2c")
+    twcr.fetch("tsfc", dte, version="2c")
+    twcr.fetch("uwnd.10m", dte, version="2c")
+    twcr.fetch("vwnd.10m", dte, version="2c")
+    twcr.fetch("prate", dte, version="2c")
     twcr.fetch("observations", dte, version="2c")
 
 # Also need one year of insolation data

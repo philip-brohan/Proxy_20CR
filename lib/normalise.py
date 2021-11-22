@@ -67,6 +67,20 @@ def unnormalise_wind(p):
     return res
 
 
+def normalise_wind_anomaly(p, c):
+    res = np.copy(p)
+    res -= c
+    res /= 12
+    return res
+
+
+def unnormalise_wind_anomaly(p, c):
+    res = np.copy(p)
+    res *= 12
+    res += c
+    return res
+
+
 def normalise_prmsl(p):
     res = np.copy(p)
     res -= 101325
