@@ -14,7 +14,7 @@ import sys
 class DCVAE(tf.keras.Model):
     def __init__(self):
         super(DCVAE, self).__init__()
-        self.latent_dim = 100
+        self.latent_dim = 150
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(80, 160, 3)),
@@ -149,21 +149,21 @@ def compute_loss(model, x):
             tf.keras.metrics.mean_squared_error(encoded[:, :, :, 0], x[:, :, :, 0]),
             axis=[1],
         )
-        * 1
+        * 100000/3
     )
     rmse_u = (
         tf.reduce_mean(
             tf.keras.metrics.mean_squared_error(encoded[:, :, :, 1], x[:, :, :, 1]),
             axis=[1],
         )
-        * 100000/2
+        * 100000/3
     )
     rmse_v = (
         tf.reduce_mean(
             tf.keras.metrics.mean_squared_error(encoded[:, :, :, 2], x[:, :, :, 2]),
             axis=[1],
         )
-        * 100000/2
+        * 100000/3
     )
     # print(rmse)
     logpz = log_normal_pdf(latent, 0.0, 0.0)
