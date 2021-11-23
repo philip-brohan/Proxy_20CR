@@ -75,7 +75,7 @@ while current_day <= end_day:
                 current_day.hour,
             )
             f.write(cmd)
-    current_day = current_day + datetime.timedelta(hours=54)
+    current_day = current_day + datetime.timedelta(hours=30)
     count += 1
 
 f.close()

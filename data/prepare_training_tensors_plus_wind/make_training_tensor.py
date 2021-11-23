@@ -10,6 +10,11 @@
 import tensorflow as tf
 import numpy
 
+# Going to do external parallelism - run this on one core
+tf.config.threading.set_inter_op_parallelism_threads(1)
+import dask
+dask.config.set(scheduler='single-threaded')
+
 import IRData.twcr as twcr
 import iris
 import datetime

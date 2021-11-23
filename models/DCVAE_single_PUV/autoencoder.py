@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-# Convolutional Variational Autoencoder for 20CR2c MSLP
+# Convolutional Variational Autoencoder for 20CR2c
+
+# This one fits a set of P, U & V fields
 
 import os
 import sys
@@ -28,15 +30,16 @@ from autoencoderModel import train_step
 from autoencoderModel import compute_loss
 
 # Load the data source provider
-sys.path.append("%s/../PRMSL_dataset" % os.path.dirname(__file__))
+sys.path.append("%s/../PUV_dataset" % os.path.dirname(__file__))
 from makeDataset import getDataset
 
+
 # How many images to use?
-nTrainingImages = 10782  # Max is 10782
-nTestImages = 1198  # Max is 1198
+nTrainingImages = 10780  # Max is 10780
+nTestImages = 1197  # Max is 1197
 
 # How many epochs to train for
-nEpochs = 500
+nEpochs = 251
 # Length of an epoch - if None, same as nTrainingImages
 nImagesInEpoch = None
 
@@ -64,7 +67,7 @@ with strategy.scope():
     optimizer = tf.keras.optimizers.Adam(1e-4)
     # If we are doing a restart, load the weights
     if args.epoch > 0:
-        weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
+        weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_PUV/" + "Epoch_%04d") % (
             os.getenv("SCRATCH"),
             args.epoch,
         )
@@ -80,7 +83,7 @@ history["val_loss"] = []
 
 
 def save_state(model, epoch, loss):
-    save_dir = ("%s/Proxy_20CR/models/DCVAE_single_PRMSL/" + "Epoch_%04d") % (
+    save_dir = ("%s/Proxy_20CR/models/DCVAE_single_PUV/" + "Epoch_%04d") % (
         os.getenv("SCRATCH"),
         epoch,
     )
@@ -93,32 +96,42 @@ def save_state(model, epoch, loss):
     pickle.dump(history, open(history_file, "wb"))
 
 
-for epoch in range(args.epoch,args.epoch+nEpochs):
+for epoch in range(nEpochs):
     start_time = time.time()
     for train_x in trainingData:
         train_step(autoencoder, train_x, optimizer)
     end_time = time.time()
 
-    train_rmse = tf.keras.metrics.Mean()
+    train_rmse_p = tf.keras.metrics.Mean()
+    train_rmse_u = tf.keras.metrics.Mean()
+    train_rmse_v = tf.keras.metrics.Mean()
     train_logpz = tf.keras.metrics.Mean()
     train_logqz_x = tf.keras.metrics.Mean()
     for test_x in validationData:
-        (rmse, logpz, logqz_x) = compute_loss(autoencoder, test_x)
-        train_rmse(rmse)
+        (rmse_p, rmse_u, rmse_v, logpz, logqz_x) = compute_loss(autoencoder, test_x)
+        train_rmse_p(rmse_p)
+        train_rmse_u(rmse_u)
+        train_rmse_v(rmse_v)
         train_logpz(logpz)
         train_logqz_x(logqz_x)
-    test_rmse = tf.keras.metrics.Mean()
+    test_rmse_p = tf.keras.metrics.Mean()
+    test_rmse_u = tf.keras.metrics.Mean()
+    test_rmse_v = tf.keras.metrics.Mean()
     test_logpz = tf.keras.metrics.Mean()
     test_logqz_x = tf.keras.metrics.Mean()
     for test_x in testData:
-        (rmse, logpz, logqz_x) = compute_loss(autoencoder, test_x)
-        test_rmse(rmse)
+        (rmse_p, rmse_u, rmse_v, logpz, logqz_x) = compute_loss(autoencoder, test_x)
+        test_rmse_p(rmse_p)
+        test_rmse_u(rmse_u)
+        test_rmse_v(rmse_v)
         test_logpz(logpz)
         test_logqz_x(logqz_x)
     print("Epoch: {}".format(epoch))
-    print("RMSE: {}, {}".format(train_rmse.result(), test_rmse.result()))
+    print("RMSE P: {}, {}".format(train_rmse_p.result(), test_rmse_p.result()))
+    print("RMSE U: {}, {}".format(train_rmse_u.result(), test_rmse_u.result()))
+    print("RMSE V: {}, {}".format(train_rmse_v.result(), test_rmse_v.result()))
     print("logpz: {}, {}".format(train_logpz.result(), test_logpz.result()))
     print("logqz_x: {}, {}".format(train_logqz_x.result(), test_logqz_x.result()))
     print("time: {}".format(end_time - start_time))
     if epoch%10==0:
-        save_state(autoencoder, epoch, test_rmse.result())
+        save_state(autoencoder, epoch, test_rmse_p.result())
