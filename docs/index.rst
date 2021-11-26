@@ -1,7 +1,20 @@
-Fast Approximate Reanalysis
-===========================
+Machine Learning for Data Assimilation
+======================================
 
 `Reanalysis <https://reanalyses.org>`_ is awesome, but it's too slow and too expensive. Can we make it cheaper?
+
+|
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   Introduction: Why MLDA? <intro>
+   Getting training data <data>
+   Building a generative model <model>
+   Pseudo-observations for assimilation <pseudo_observations>
+   Data Assimilation with Machine Learning <data_assimilation>
+   Applications: Why MLDA? <applications>
 
 |
 
