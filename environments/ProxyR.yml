@@ -4,15 +4,18 @@ channels:
   - conda-forge
 dependencies:
 # Basics
-  - python=3.7
-  - iris=3.0.1
+  - python=3.9
+  - numpy=1.19.5 # tf-graphics requires this old version
+  - iris=3.0
   - cmocean=2.0
   - parallel
 # ML model building and diagnostics
-# Note, depending on your system, you might get faster training by changing
-#   this to tensorflow-gpu, or tensorflow-mkl or tensorflow-eigen.
-  - tensorflow=2.4.*
+# If you don't have a GPU, tensorflow-eigen might be faster
+  - tensorflow-gpu=2.4.*
   - tensorflow-probability=0.12.*
+# openexr is not used, but tf-graphics won't install without it (known bug). 
+  - openexr=2.5.*
+  - openexr-python=1.3.*
 # Code formatter
   - black=20.*
 # Documentation processor
@@ -21,6 +24,10 @@ dependencies:
   - pip
   - pip:
   # Philip's library for Reanalysis data handling
-    - git+ssh://git@github.com/philip-brohan/IRData.git@9642bd9f6b182f5ce3734bc36ba82abd7d7f778d
+    - git+ssh://git@github.com/philip-brohan/IRData.git@068a6a55bf5f6f687e0bbd072c7b0fe259884365
   # Needed by TensorBoard for profiling
     - tensorboard_plugin_profile
+  # For bilinear interpolation
+    - tensorflow-addons==0.14
+  # For trilinear interpolation
+    - tensorflow-graphics

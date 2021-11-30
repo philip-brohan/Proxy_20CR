@@ -14,20 +14,29 @@ import os
 def load_normal(var, year, month, day, hour):
     if month == 2 and day == 29:
         day = 28
-    prevt = datetime.datetime(year, month, day, hour)
-    prevcsd = iris.load_cube(
+    st = datetime.datetime(year, month, day, hour)
+    sd = iris.load_cube(
         "%s/20CR/version_3.4.1/normal/%s.nc" % (os.getenv("DATADIR"), var),
         iris.Constraint(
             time=iris.time.PartialDateTime(
-                year=1981, month=prevt.month, day=prevt.day, hour=prevt.hour
+                year=1981, month=st.month, day=st.day, hour=st.hour
             )
         ),
     )
     coord_s = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
-    prevcsd.coord("latitude").coord_system = coord_s
-    prevcsd.coord("longitude").coord_system = coord_s
-    return prevcsd
+    sd.coord("latitude").coord_system = coord_s
+    sd.coord("longitude").coord_system = coord_s
+    return sd
 
+prevt = datetime.datetime(args.year,args.month,args.day,int(args.hour/6)*6)
+prevn = load_normal('prmsl',prevt.year,prevt.month,prevt.day,prevt.hour)
+nextt = prevt+datetime.timedelta(hours=6)
+nextn = load_normal('prmsl',nextt.year,nextt.month,nextt.day,nextt.hour)
+nextn.attributes = prevn.attributes
+ncl = iris.cube.CubeList((prevn, nextn)).merge_cube()
+normal = ncl.interpolate([("time", dte)], iris.analysis.Linear())
+
+normal = 
 
 def normalise_insolation(p):
     res = np.copy(p)
