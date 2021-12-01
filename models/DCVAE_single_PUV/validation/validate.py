@@ -50,7 +50,7 @@ load_status.assert_existing_objects_matched()
 
 margin = 0.05
 f_width = (margin * 5 / 8) * 4 + 3 + 3 + 2
-f_height = margin * 6 + 5
+f_height = margin * 4 + 3
 s_width = 1 / f_width
 s_height = 1 / f_height
 m_width = (margin * 5 / 8) / f_width
@@ -181,6 +181,9 @@ for tp in range(3):  # Each time-slice
         land=lm,
         label="Generator %s" % ("mslp","uwnd.10m","vwnd.10m")[tp],
         linewidths=[0.5, 0.5],
+        d_min=-0.25,
+        d_max=1.25,
+        c_space=0.1,
     )
 
 fig.savefig("comparison.png")
