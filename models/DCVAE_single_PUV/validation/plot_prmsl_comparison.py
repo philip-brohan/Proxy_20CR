@@ -100,7 +100,7 @@ def plot_PRMSL(
         bbox=dict(
             facecolor=(0.8, 0.8, 0.8, 0.8), edgecolor="black", boxstyle="round", pad=0.5
         ),
-        size=8,
+        size=4,
         clip_on=True,
         zorder=40,
     )

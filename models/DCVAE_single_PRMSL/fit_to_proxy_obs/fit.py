@@ -137,7 +137,7 @@ plot_PRMSL(
     tf.reshape(target, [80, 160]),
     tf.reshape(encoded, [80, 160]),
     obs=t_obs,
-    #obs_c=exact,
+    linewidths=[2,2,0.5],
     land=lm,
     label="Test: %d" % count,
 )

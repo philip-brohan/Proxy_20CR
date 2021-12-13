@@ -166,7 +166,7 @@ plot_PRMSL(
     obs=ob_locations,
     land=lm,
     label="Test: %d" % count,
-    linewidths=[0.5,0.2,0.5]
+    linewidths=[0.0,0.2,0.5]
 )
 
 fig.savefig("fit_multi.png")

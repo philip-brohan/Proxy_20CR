@@ -28,16 +28,6 @@ def load_normal(var, year, month, day, hour):
     sd.coord("longitude").coord_system = coord_s
     return sd
 
-prevt = datetime.datetime(args.year,args.month,args.day,int(args.hour/6)*6)
-prevn = load_normal('prmsl',prevt.year,prevt.month,prevt.day,prevt.hour)
-nextt = prevt+datetime.timedelta(hours=6)
-nextn = load_normal('prmsl',nextt.year,nextt.month,nextt.day,nextt.hour)
-nextn.attributes = prevn.attributes
-ncl = iris.cube.CubeList((prevn, nextn)).merge_cube()
-normal = ncl.interpolate([("time", dte)], iris.analysis.Linear())
-
-normal = 
-
 def normalise_insolation(p):
     res = np.copy(p)
     res /= 25
