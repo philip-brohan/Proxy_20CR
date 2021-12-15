@@ -47,7 +47,7 @@ bufferSize = 1000  # Untested
 batchSize = 32  # Arbitrary
 
 # Set up the training data
-trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(5)
+trainingData = getDataset(purpose="training", nImages=nTrainingImages).repeat(1)
 trainingData = trainingData.shuffle(bufferSize).batch(batchSize)
 
 # Subset of the training data for metrics

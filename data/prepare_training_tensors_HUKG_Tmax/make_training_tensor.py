@@ -67,7 +67,8 @@ t += 0.5
 t = HUKG_trim(t)
 
 # Convert to Tensor
-ict = tf.convert_to_tensor(t.data, np.float32)
+t.data.data[t.data.mask]=0.5
+ict = tf.convert_to_tensor(t.data.data, np.float32)
 
 # Write to file
 sict = tf.io.serialize_tensor(ict)
