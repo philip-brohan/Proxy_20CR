@@ -82,9 +82,9 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (t_in - 0.5) * 10,
-    vMin=-5,
-    vMax=25,
+    (t_in - 0.5) * 15,
+    vMin=-10,
+    vMax=10,
     land=lm,
     label="Original: %d" % args.case,
 )
@@ -97,9 +97,9 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (encoded - 0.5) * 10,
-    vMin=-5,
-    vMax=25,
+    (encoded - 0.5) * 15,
+    vMin=-10,
+    vMax=10,
     land=lm,
     label="Encoded",
 )
@@ -112,7 +112,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (encoded - t_in) * 10,
+    (encoded - t_in) * 15,
     vMin=-10,
     vMax=10,
     land=lm,
@@ -123,8 +123,8 @@ plot_colourbar(fig, ax_ocb, ofp)
 
 # Bottom right - scatterplot
 
-ax_scatter = fig.add_axes([0.67, 0.156, 0.2, 0.266])
-plot_scatter(ax_scatter, t_in, encoded)
+ax_scatter = fig.add_axes([0.67, 0.05, 0.2, 0.4])
+plot_scatter(ax_scatter, t_in, encoded,d_max=15, d_min=-15)
 
 
 fig.savefig("comparison.png")

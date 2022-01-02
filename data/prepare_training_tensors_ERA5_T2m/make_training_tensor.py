@@ -61,7 +61,7 @@ t = ERA5_load_T2m(args.year, args.month, args.day)
 c = ERA5_load_T2m_climatology(args.year, args.month, args.day)
 t = t - c
 # Rescale to range 0-1 (approx)
-t /= 10
+t /= 15
 t += 0.5
 # discard bottom left to make sizes multiply divisible by 2
 t = ERA5_trim(t)

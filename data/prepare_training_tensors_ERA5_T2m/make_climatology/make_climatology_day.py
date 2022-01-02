@@ -29,7 +29,7 @@ if not os.path.isdir(os.path.dirname(opfile)):
     os.makedirs(os.path.dirname(opfile))
 
 c = None
-for year in range(1981, 2010):
+for year in range(1981, 2011):
     yd = ERA5_load_T2m(year, args.month, args.day)
     if c is None:
         c = yd.copy()
