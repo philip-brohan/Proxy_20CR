@@ -12,6 +12,24 @@ def ERA5_trim(f, x=1440, y=720):
     return f.extract(cx & cy)
 
 
+def ERA5_load_LS_mask():
+    fname = (
+        "%s/Proxy_20CR/datasets/ERA5/daily_SST/"
+        + "era5_daily_0m_sea_surface_temperature_19790101to20210831.nc"
+    ) % os.getenv("SCRATCH")
+    ddata = iris.load_cube(
+        fname,
+        iris.Constraint(
+            time=lambda cell: cell.point.year == 1979
+            and cell.point.month == 1
+            and cell.point.day == 1
+        ),
+    )
+    ddata.data = ddata.data.data # Remove mask
+    ddata.data[ddata.data<10000]=0
+    ddata.data[ddata.data>0]=1
+    return ddata
+
 def ERA5_load_T2m(year, month, day):
     fname = (
         "%s/Proxy_20CR/datasets/ERA5/daily_T2m/"

@@ -11,3 +11,6 @@ cp -n /data/users/hadrc/obs/daily/era5_daily_2m_maximum_temperature_19790101to20
 mkdir -p $SCRATCH/Proxy_20CR/datasets/ERA5/daily_T2m
 cp -n /data/users/hadrc/obs/daily/era5_daily_2m_temperature_19790101to20210831.nc $SCRATCH/Proxy_20CR/datasets/ERA5/daily_T2m/
 
+mkdir -p $SCRATCH/Proxy_20CR/datasets/ERA5/daily_SST
+cp -n /data/users/hadrc/obs/daily/era5_daily_0m_sea_surface_temperature_19790101to20210831.nc $SCRATCH/Proxy_20CR/datasets/ERA5/daily_SST/
+

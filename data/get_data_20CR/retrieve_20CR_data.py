@@ -8,7 +8,7 @@ import datetime
 import IRData.twcr as twcr
 import urllib.request
 
-for year in [1903,1916]:
+for year in [1903, 1916]:
     # 2c is in 1 year batches so month and day don't matter
     dte = datetime.datetime(year, 1, 1)
     twcr.fetch("prmsl", dte, version="2c")
