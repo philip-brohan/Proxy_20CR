@@ -4,6 +4,14 @@ import os
 import iris
 
 
+def ERA5_roll_longitude(f):
+    f1 = f.extract(iris.Constraint(longitude=lambda cell: cell > 180))
+    longs = f1._dim_coords_and_dims[1][0].points - 360
+    f1._dim_coords_and_dims[1][0].points = longs
+    f2 = f.extract(iris.Constraint(longitude=lambda cell: cell <= 180))
+    f = iris.cube.CubeList([f1,f2]).concatenate_cube()
+    return(f)
+
 def ERA5_trim(f, x=1440, y=720):
     xmin = f.coord("longitude").points[-x]
     cx = iris.Constraint(longitude=lambda cell: cell >= xmin)

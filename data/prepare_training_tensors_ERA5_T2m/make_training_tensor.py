@@ -26,6 +26,7 @@ import sys
 sys.path.append("%s" % os.path.dirname(__file__))
 from ERA5_load import ERA5_load_T2m
 from ERA5_load import ERA5_load_T2m_climatology
+from ERA5_load import ERA5_roll_longitude
 from ERA5_load import ERA5_trim
 
 import argparse
@@ -63,6 +64,8 @@ t = t - c
 # Rescale to range 0-1 (approx)
 t /= 15
 t += 0.5
+# Roll the longitude to put the UK in the centre
+t = ERA5_roll_longitude(t)
 # discard bottom left to make sizes multiply divisible by 2
 t = ERA5_trim(t)
 
