@@ -14,11 +14,13 @@ sys.path.append(
     "%s/../../../data/prepare_training_tensors_ERA5_T2m/" % os.path.dirname(__file__)
 )
 from ERA5_load import ERA5_trim
+from ERA5_load import ERA5_roll_longitude
 from ERA5_load import ERA5_load_LS_mask
 
 # It's a spatial map, so want the land mask
 def get_land_mask():
     mask = ERA5_load_LS_mask()
+    mask = ERA5_roll_longitude(mask)
     return ERA5_trim(mask)
 
 
@@ -46,7 +48,7 @@ def plot_T2m(
         cmap=cmocean.cm.balance,
         vmin=vMin,
         vmax=vMax,
-        alpha=1.0,
+        alpha=0.9,
         zorder=40,
     )
     if label is not None:
