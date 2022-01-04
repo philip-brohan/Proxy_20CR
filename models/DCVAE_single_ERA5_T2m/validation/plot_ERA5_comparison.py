@@ -45,7 +45,7 @@ def plot_T2m(
         lons,
         lats,
         tf.squeeze(tmx).numpy(),
-        cmap='RdYlBu_r',
+        cmap="RdYlBu_r",
         vmin=vMin,
         vmax=vMax,
         alpha=0.9,
