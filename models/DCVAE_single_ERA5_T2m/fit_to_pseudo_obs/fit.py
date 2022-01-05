@@ -31,7 +31,9 @@ parser.add_argument("--day", type=int, required=False, default=12)
 parser.add_argument("--oyear", help="Year", type=int, required=False)
 parser.add_argument("--omonth", help="Integer month", type=int, required=False)
 parser.add_argument("--oday", help="Day of month", type=int, required=False)
-parser.add_argument("--osize", help="Obs. point size", type=float, required=False,default=1.0)
+parser.add_argument(
+    "--osize", help="Obs. point size", type=float, required=False, default=0.5
+)
 args = parser.parse_args()
 if args.oyear is None:
     args.oyear = args.year
@@ -74,7 +76,7 @@ t_lats = (obs["Latitude"].values + 90) / 180
 t_lons = (obs["Longitude"].values) / 360
 t_lons[t_lons > 0.5] -= 1
 t_lons += 0.5
-t_lats = tf.convert_to_tensor(1.0-t_lats, tf.float32)
+t_lats = tf.convert_to_tensor(1.0 - t_lats, tf.float32)
 t_lons = tf.convert_to_tensor(t_lons, tf.float32)
 t_obs = tf.stack((t_lats * 720, t_lons * 1440), axis=1)
 t_obs = tf.expand_dims(t_obs, 0)
@@ -123,6 +125,8 @@ loss = tfp.math.minimize(
     trainable_variables=[latent],
     num_steps=1000,
     optimizer=tf.optimizers.Adam(learning_rate=0.05),
+    convergence_criterion=tfp.optimizer.convergence_criteria.SuccessiveGradientsAreUncorrelated()
+    #    convergence_criterion=tfp.optimizer.convergence_criteria.LossNotDecreasing(atol=0.001)
 )
 print(loss)
 
@@ -137,7 +141,7 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
-matplotlib.rcParams.update({'font.size': 16})
+matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
 lm = get_land_mask()
@@ -146,8 +150,8 @@ lm = get_land_mask()
 ax_of = fig.add_axes([0.075, 0.065, 0.85, 0.425])
 ax_of.set_aspect("equal")
 ax_of.set_axis_off()
-ax_of.set_xlim(-180,180)
-ax_of.set_ylim(-90,90)
+ax_of.set_xlim(-180, 180)
+ax_of.set_ylim(-90, 90)
 ofp = plot_T2m(
     ax_of,
     (t_in - 0.5) * 15,
@@ -165,15 +169,15 @@ encoded = autoencoder.decode(latent)
 ax_ef = fig.add_axes([0.075, 0.565, 0.85, 0.425])
 ax_ef.set_aspect("equal")
 ax_ef.set_axis_off()
-ax_ef.set_xlim(-180,180)
-ax_ef.set_ylim(-90,90)
+ax_ef.set_xlim(-180, 180)
+ax_ef.set_ylim(-90, 90)
 efp = plot_T2m(
     ax_ef,
     (encoded - 0.5) * 15,
     vMin=-10,
     vMax=10,
     obs=t_obs,
-    o_size = args.osize,
+    o_size=args.osize,
     land=lm,
     label="Encoded",
 )

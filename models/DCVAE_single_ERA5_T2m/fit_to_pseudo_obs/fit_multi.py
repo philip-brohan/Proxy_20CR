@@ -106,7 +106,7 @@ weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_ERA5_T2m/" + "Epoch_%04d") % (
 )
 load_status = autoencoder.load_weights("%s/ckpt" % weights_dir).expect_partial()
 # Check the load worked
-load_status.assert_existing_objects_matched()
+devn = load_status.assert_existing_objects_matched()
 
 # We are using it in inference mode
 # (I'm not at all sure this actually works)
@@ -122,34 +122,38 @@ def findLatent(
     latent,
     ob_locations,
     pseudo_obs,
-    num_steps=100,
+    num_steps=1000,
     optimizer=tf.optimizers.Adam(learning_rate=0.05),
 ):
     def decodeFit():
         decoded = autoencoder.decode(latent)
         at_obs = tf.squeeze(interpolate_bilinear(decoded, t_obs, indexing="ij"))
-        return tf.reduce_mean(tf.keras.metrics.mean_squared_error(pseudo_obs, at_obs))
+        return tf.keras.metrics.mean_squared_error(pseudo_obs, at_obs)
 
     loss = tfp.math.minimize(
         decodeFit,
         trainable_variables=[latent],
         num_steps=num_steps,
         optimizer=optimizer,
+        convergence_criterion=tfp.optimizer.convergence_criteria.LossNotDecreasing(
+            atol=0.00001, min_num_steps=100
+        ),
     )
     return (latent, loss)
 
 
 # Make a set of fitted fields
-fitted = []
-for i in range(args.ensemble):
-    latent = tf.Variable(tf.random.normal(shape=(1, autoencoder.latent_dim)))
-    pseudo_obs_sample = exact + tf.random.normal(
-        shape=exact.shape, mean=0.0, stddev=args.noise / 15, dtype=tf.float32
-    )
-    (latent, loss) = findLatent(autoencoder, latent, t_obs, pseudo_obs_sample)
-    fitted.append(autoencoder.decode(latent))
+# fitted = []
+# for i in range(args.ensemble):
+latent = tf.Variable(tf.random.normal(shape=(args.ensemble, autoencoder.latent_dim)))
+pseudo_obs_sample = exact + tf.random.normal(
+    shape=exact.shape, mean=0.0, stddev=args.noise / 15, dtype=tf.float32
+)
+(latent, loss) = findLatent(autoencoder, latent, t_obs, pseudo_obs_sample)
+fitted = autoencoder.decode(latent)
+# fitted.append(autoencoder.decode(latent))
 
-fitted = tf.stack(fitted, axis=0)
+# fitted = tf.stack(fitted, axis=0)
 
 fig = Figure(
     figsize=(15, 15),
@@ -178,7 +182,7 @@ ofp = plot_T2m(
     vMin=-10,
     vMax=10,
     land=lm,
-    label="Original: %04d-%02d-%02d" % (args.year,args.month,args.day),
+    label="Original: %04d-%02d-%02d" % (args.year, args.month, args.day),
 )
 ax_ocb = fig.add_axes([0.05, 0.025, 0.81, 0.02])
 plot_colourbar(fig, ax_ocb, ofp)
@@ -210,7 +214,7 @@ efp = plot_T2m(
     obs=t_obs,
     o_size=0.5,
     land=lm,
-    label="Obs of: %04d-%02d-%02d" % (args.oyear,args.month,args.day)
+    label="Obs of: %04d-%02d-%02d" % (args.oyear, args.month, args.day),
 )
 ax_ecb = fig.add_axes([0.05, 0.525, 0.81, 0.02])
 plot_colourbar(fig, ax_ecb, efp)
