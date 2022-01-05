@@ -29,6 +29,8 @@ def plot_T2m(
     tmx,
     vMin=0,
     vMax=1,
+    obs=None,
+    o_size=1,
     land=None,
     label=None,
 ):
@@ -51,6 +53,18 @@ def plot_T2m(
         alpha=0.9,
         zorder=40,
     )
+   # Observations
+    if obs is not None:
+        obs = tf.squeeze(obs)
+        x = (obs[:,1].numpy()/1440)*360-180
+        y = (obs[:,0].numpy()/720)*180-90
+        ax.scatter(((x/2).astype(int)+1)*2,
+                   ((y/2).astype(int)+1)*2,
+                s=3.0*o_size,
+                c='black',
+                marker='o',
+                alpha=1.0,
+                zorder=50)
     if label is not None:
         ax.text(
             lons[0] + (lons[-1] - lons[0]) * 0.02,
@@ -65,7 +79,7 @@ def plot_T2m(
                 boxstyle="round",
                 pad=0.5,
             ),
-            size=8,
+            size=matplotlib.rcParams['font.size']/1.5,
             clip_on=True,
             zorder=100,
         )

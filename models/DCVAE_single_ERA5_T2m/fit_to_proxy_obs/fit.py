@@ -31,6 +31,7 @@ parser.add_argument("--day", type=int, required=False, default=12)
 parser.add_argument("--oyear", help="Year", type=int, required=False)
 parser.add_argument("--omonth", help="Integer month", type=int, required=False)
 parser.add_argument("--oday", help="Day of month", type=int, required=False)
+parser.add_argument("--osize", help="Obs. point size", type=float, required=False,default=1.0)
 args = parser.parse_args()
 if args.oyear is None:
     args.oyear = args.year
@@ -107,7 +108,7 @@ exact = tf.squeeze(interpolate_bilinear(target, t_obs, indexing="ij"))
 t_obs = tf.boolean_mask(t_obs, ~tf.math.is_nan(exact), axis=1)
 exact = tf.boolean_mask(exact, ~tf.math.is_nan(exact), axis=0)
 approx = exact + tf.random.normal(
-    shape=exact.shape, mean=0.0, stddev=1.0 / 15, dtype=tf.float32
+    shape=exact.shape, mean=0.0, stddev=0.0 / 15, dtype=tf.float32
 )
 
 
@@ -126,7 +127,7 @@ loss = tfp.math.minimize(
 print(loss)
 
 fig = Figure(
-    figsize=(19.2 / 2, 10.8),
+    figsize=(15, 15),
     dpi=100,
     facecolor=(0.88, 0.88, 0.88, 1),
     edgecolor=None,
@@ -136,14 +137,17 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+matplotlib.rcParams.update({'font.size': 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
 lm = get_land_mask()
 
 # Bottom - original field
-ax_of = fig.add_axes([0.01, 0.065, 0.98, 0.425])
-ax_of.set_aspect("auto")
+ax_of = fig.add_axes([0.075, 0.065, 0.85, 0.425])
+ax_of.set_aspect("equal")
 ax_of.set_axis_off()
+ax_of.set_xlim(-180,180)
+ax_of.set_ylim(-90,90)
 ofp = plot_T2m(
     ax_of,
     (t_in - 0.5) * 15,
@@ -158,14 +162,18 @@ plot_colourbar(fig, ax_ocb, ofp)
 
 # Top, encoded field
 encoded = autoencoder.decode(latent)
-ax_ef = fig.add_axes([0.01, 0.565, 0.98, 0.425])
-ax_ef.set_aspect("auto")
+ax_ef = fig.add_axes([0.075, 0.565, 0.85, 0.425])
+ax_ef.set_aspect("equal")
 ax_ef.set_axis_off()
+ax_ef.set_xlim(-180,180)
+ax_ef.set_ylim(-90,90)
 efp = plot_T2m(
     ax_ef,
     (encoded - 0.5) * 15,
     vMin=-10,
     vMax=10,
+    obs=t_obs,
+    o_size = args.osize,
     land=lm,
     label="Encoded",
 )
