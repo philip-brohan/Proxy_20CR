@@ -74,7 +74,7 @@ t_lats = (obs["Latitude"].values + 90) / 180
 t_lons = (obs["Longitude"].values) / 360
 t_lons[t_lons > 0.5] -= 1
 t_lons += 0.5
-t_lats = tf.convert_to_tensor(t_lats, tf.float32)
+t_lats = tf.convert_to_tensor(1.0-t_lats, tf.float32)
 t_lons = tf.convert_to_tensor(t_lons, tf.float32)
 t_obs = tf.stack((t_lats * 720, t_lons * 1440), axis=1)
 t_obs = tf.expand_dims(t_obs, 0)

@@ -58,6 +58,7 @@ def plot_T2m(
         obs = tf.squeeze(obs)
         x = (obs[:,1].numpy()/1440)*360-180
         y = (obs[:,0].numpy()/720)*180-90
+        y *= -1
         ax.scatter(((x/2).astype(int)+1)*2,
                    ((y/2).astype(int)+1)*2,
                 s=3.0*o_size,
