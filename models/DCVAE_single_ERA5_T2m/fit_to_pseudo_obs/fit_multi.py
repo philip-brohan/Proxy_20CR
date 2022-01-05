@@ -178,7 +178,7 @@ ofp = plot_T2m(
     vMin=-10,
     vMax=10,
     land=lm,
-    label="Original",
+    label="Original: %04d-%02d-%02d" % (args.year,args.month,args.day),
 )
 ax_ocb = fig.add_axes([0.05, 0.025, 0.81, 0.02])
 plot_colourbar(fig, ax_ocb, ofp)
@@ -210,7 +210,7 @@ efp = plot_T2m(
     obs=t_obs,
     o_size=0.5,
     land=lm,
-    label="Encoded",
+    label="Obs of: %04d-%02d-%02d" % (args.oyear,args.month,args.day)
 )
 ax_ecb = fig.add_axes([0.05, 0.525, 0.81, 0.02])
 plot_colourbar(fig, ax_ecb, efp)
