@@ -3,6 +3,7 @@
 
 import os
 import sys
+import math
 
 # import iris
 import numpy as np
@@ -29,6 +30,9 @@ def plot_T2m(
     tmx,
     vMin=0,
     vMax=1,
+    fog=None,
+    fog_threshold=0.5,
+    fog_steepness=10,
     obs=None,
     o_size=1,
     land=None,
@@ -39,7 +43,7 @@ def plot_T2m(
     lats = land.coord("latitude").points
     lons = land.coord("longitude").points
     land_img = ax.pcolorfast(
-        lons, lats, land.data, cmap="Greys", alpha=1.0, vmax=1.2, vmin=-0.5, zorder=10
+        lons, lats, land.data, cmap="Greys", alpha=0.1, vmax=1.2, vmin=-0.5, zorder=100
     )
     # Field data
 
@@ -50,9 +54,24 @@ def plot_T2m(
         cmap="RdYlBu_r",
         vmin=vMin,
         vmax=vMax,
-        alpha=0.9,
+        alpha=1.0,
         zorder=40,
     )
+    # Fog of ignorance
+    if fog is not None:
+        def fog_map(x): 
+            return 1/(1+math.exp((x-fog_threshold)*fog_steepness*-1))
+        cols=[]
+        for ci in range(100):
+            cols.append([0.8,0.8,0.8,fog_map(ci/100)])
+
+        fog_img = ax.pcolorfast(lons, lats, tf.squeeze(fog).numpy(),
+                                   cmap=matplotlib.colors.ListedColormap(cols),
+                                   alpha=0.95,
+                                   vmin=0,
+                                   vmax=1,
+                                   zorder=50)
+
    # Observations
     if obs is not None:
         obs = tf.squeeze(obs)
@@ -65,7 +84,7 @@ def plot_T2m(
                 c='black',
                 marker='o',
                 alpha=1.0,
-                zorder=50)
+                zorder=60)
     if label is not None:
         ax.text(
             lons[0] + (lons[-1] - lons[0]) * 0.02,

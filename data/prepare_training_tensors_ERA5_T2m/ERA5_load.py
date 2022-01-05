@@ -64,3 +64,14 @@ def ERA5_load_T2m_climatology(year, month, day):
     )
     ddata = iris.load_cube(fname)
     return ddata
+
+def ERA5_load_T2m_variability_climatology(year, month, day):
+    if month == 2 and day == 29:
+        day = 28
+    fname = ("%s/Proxy_20CR/datasets/ERA5/daily_T2m/" + "variability_climatology/%02d/%02d.nc") % (
+        os.getenv("SCRATCH"),
+        month,
+        day,
+    )
+    ddata = iris.load_cube(fname)
+    return ddata
