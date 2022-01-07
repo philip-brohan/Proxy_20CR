@@ -45,7 +45,7 @@ weights_dir = ("%s/Proxy_20CR/models/DCVAE_single_HUKG_Tmax/" + "Epoch_%04d") % 
     os.getenv("SCRATCH"),
     args.epoch,
 )
-load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
+load_status = autoencoder.load_weights("%s/ckpt" % weights_dir).expect_partial()
 # Check the load worked
 load_status.assert_existing_objects_matched()
 
@@ -57,7 +57,7 @@ for t_in in testData:
     count += 1
 
 # Make encoded version
-encoded = autoencoder.call(tf.reshape(t_in, [1, 1440, 896, 1]))
+encoded = tf.convert_to_tensor(autoencoder.predict_on_batch(tf.reshape(t_in, [1, 1440, 896, 1])))
 
 # Make the figure
 lm = get_land_mask()

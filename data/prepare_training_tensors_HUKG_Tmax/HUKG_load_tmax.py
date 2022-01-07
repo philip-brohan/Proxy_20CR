@@ -2,6 +2,7 @@
 
 import os
 import iris
+import netCDF4
 import calendar
 import datetime
 
@@ -28,6 +29,23 @@ def HUKG_load_tmax(year, month, day):
     filename = "%02d.nc" % day
     hdata = iris.load_cube("%s/%s" % (dirname, filename))
     return hdata
+
+def HUKG_load_observations(year, month, day):
+    if year > 2018:
+        dirname = (
+            "%s/Proxy_20CR/datasets/haduk-grid/"
+            + "series_archive_provisional/station/daily_maxtemp/%04d/%02d"
+        ) % (os.getenv("SCRATCH"), year, month)
+    else:
+        dirname = (
+            "%s/Proxy_20CR/datasets/haduk-grid/"
+            + "v1.0.3.0/station/daily_maxtemp/%04d/%02d"
+        ) % (os.getenv("SCRATCH"), year, month)
+    filename = "%02d.nc" % day
+    nc = netCDF4.Dataset("%s/%s" % (dirname, filename))
+    return {'projection_x_coordinate':nc.variables['projection_x_coordinate'][:].data,
+            'projection_y_coordinate':nc.variables['projection_y_coordinate'][:].data,
+            'Tmax':nc.variables['daily_maxtemp'][:].data}
 
 
 # Get an approximate daily climatology from the HadUKGrid monthlies

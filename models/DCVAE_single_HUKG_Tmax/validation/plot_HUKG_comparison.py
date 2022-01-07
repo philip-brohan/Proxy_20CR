@@ -28,7 +28,10 @@ def plot_Tmax(
     tmx,
     vMin=0,
     vMax=1,
+    obs=None,
+    o_size=1,
     land=None,
+    mask=None,
     label=None,
 ):
     if land is None:
@@ -38,18 +41,33 @@ def plot_Tmax(
     land_img = ax.pcolorfast(
         lons, lats, land.data, cmap="Greys", alpha=1.0, vmax=1.2, vmin=-0.5, zorder=10
     )
-    # Field data
+
+    pdata = tf.squeeze(tmx).numpy()
+    if mask is not None:
+        pdata[mask]=0
+    pdata = np.ma.masked_where(land.data == 0,pdata)
 
     T_img = ax.pcolorfast(
         lons,
         lats,
-        np.ma.masked_where(land.data == 0, tf.squeeze(tmx).numpy()),
+        pdata,
         cmap=cmocean.cm.balance,
         vmin=vMin,
         vmax=vMax,
         alpha=1.0,
         zorder=40,
     )
+    if obs is not None:
+        obs = tf.squeeze(obs)
+        x = (obs[:,1].numpy()/896)*(lons[-1]-lons[0])+lons[0]
+        y = (obs[:,0].numpy()/1440)*(lats[-1]-lats[0])+lats[0]
+        ax.scatter(x,  #((x/2).astype(int)+1)*2,
+                   y,  #((y/2).astype(int)+1)*2,
+                s=3.0*o_size,
+                c='black',
+                marker='o',
+                alpha=1.0,
+                zorder=60)
     if label is not None:
         ax.text(
             lons[0] + (lons[-1] - lons[0]) * 0.03,

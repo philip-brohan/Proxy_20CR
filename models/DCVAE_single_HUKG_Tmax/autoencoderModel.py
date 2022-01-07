@@ -12,7 +12,7 @@ import sys
 class DCVAE(tf.keras.Model):
     def __init__(self):
         super(DCVAE, self).__init__()
-        self.latent_dim = 100
+        self.latent_dim = 20
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(1440, 896, 1)),
