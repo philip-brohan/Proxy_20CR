@@ -44,8 +44,8 @@ def plot_Tmax(
 
     pdata = tf.squeeze(tmx).numpy()
     if mask is not None:
-        pdata[mask]=0
-    pdata = np.ma.masked_where(land.data == 0,pdata)
+        pdata[mask] = 0
+    pdata = np.ma.masked_where(land.data == 0, pdata)
 
     T_img = ax.pcolorfast(
         lons,
@@ -59,15 +59,17 @@ def plot_Tmax(
     )
     if obs is not None:
         obs = tf.squeeze(obs)
-        x = (obs[:,1].numpy()/896)*(lons[-1]-lons[0])+lons[0]
-        y = (obs[:,0].numpy()/1440)*(lats[-1]-lats[0])+lats[0]
-        ax.scatter(x,  #((x/2).astype(int)+1)*2,
-                   y,  #((y/2).astype(int)+1)*2,
-                s=3.0*o_size,
-                c='black',
-                marker='o',
-                alpha=1.0,
-                zorder=60)
+        x = (obs[:, 1].numpy() / 896) * (lons[-1] - lons[0]) + lons[0]
+        y = (obs[:, 0].numpy() / 1440) * (lats[-1] - lats[0]) + lats[0]
+        ax.scatter(
+            x,  # ((x/2).astype(int)+1)*2,
+            y,  # ((y/2).astype(int)+1)*2,
+            s=3.0 * o_size,
+            c="black",
+            marker="o",
+            alpha=1.0,
+            zorder=60,
+        )
     if label is not None:
         ax.text(
             lons[0] + (lons[-1] - lons[0]) * 0.03,
@@ -89,7 +91,9 @@ def plot_Tmax(
     return T_img
 
 
-def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5):
+def plot_scatter(
+    ax, t_in, t_out, land=None, d_max=5, d_min=-5, xlab="Original", ylab="Encoded"
+):
     x = (t_in.numpy().flatten() - 0.5) * 10
     y = (t_out.numpy().flatten() - 0.5) * 10
     #    if land is not None:
@@ -108,12 +112,12 @@ def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5):
             xdata=(d_min, d_max),
             ydata=(d_min, d_max),
             linestyle="solid",
-            linewidth=0.5,
+            linewidth=1.5,
             color=(0.5, 0.5, 0.5, 1),
             zorder=100,
         )
     )
-    ax.set(xlabel="Original", ylabel="Encoded")
+    ax.set(xlabel=xlab, ylabel=ylab)
     ax.grid(color="black", alpha=0.2, linestyle="-", linewidth=0.5)
 
 

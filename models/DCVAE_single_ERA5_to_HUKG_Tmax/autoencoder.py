@@ -59,7 +59,7 @@ with strategy.scope():
         "%s/Proxy_20CR/models/DCVAE_single_HUKG_Tmax/" + "Epoch_%04d"
     ) % (
         os.getenv("SCRATCH"),
-        100,
+        200,
     )
     load_status = autoencoder.load_weights("%s/ckpt" % weights_dir).expect_partial()
     # Check the load worked
