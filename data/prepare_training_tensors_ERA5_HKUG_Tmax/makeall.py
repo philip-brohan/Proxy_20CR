@@ -37,7 +37,7 @@ end_day = datetime.date(2020, 8, 31)
 current_day = start_day
 count = 1
 while current_day <= end_day:
-    if count % 10 == 0:
+    if count % 10 == 8:  # To match with hadUKgrid test cases 
         if not is_done(
             current_day.year,
             current_day.month,
