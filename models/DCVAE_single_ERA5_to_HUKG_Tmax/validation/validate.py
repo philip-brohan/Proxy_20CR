@@ -14,6 +14,7 @@ import os
 import sys
 import random
 import numpy as np
+import iris
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -23,9 +24,9 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch", type=int, required=True)
-parser.add_argument(
-    "--case", help="Test case to plot", type=int, required=False, default=0
-)
+parser.add_argument("--year", type=int, required=False, default=1979)
+parser.add_argument("--month", type=int, required=False, default=3)
+parser.add_argument("--day", type=int, required=False, default=12)
 args = parser.parse_args()
 
 sys.path.append("%s/." % os.path.dirname(__file__))
@@ -34,12 +35,48 @@ from plot_HUKG_comparison import plot_Tmax
 from plot_HUKG_comparison import plot_scatter
 from plot_HUKG_comparison import plot_colourbar
 
-# Load the data source provider
-sys.path.append("%s/.." % os.path.dirname(__file__))
-from makeDataset import getDataset
-from autoencoderModel import DCVAE
+# Make the HUKG tensor for the specified date
+sys.path.append(
+    "%s/../../../data/prepare_training_tensors_HUKG_Tmax" % os.path.dirname(__file__)
+)
+from HUKG_load_tmax import HUKG_load_tmax
+from HUKG_load_tmax import HUKG_load_tmax_climatology
+from HUKG_load_tmax import HUKG_trim
+from HUKG_load_tmax import HUKG_load_observations
 
-testData = getDataset(purpose="test")
+ht = HUKG_load_tmax(args.year, args.month, args.day)
+hc = HUKG_load_tmax_climatology(args.year, args.month, args.day)
+ht = ht - hc
+ht /= 10
+ht += 0.5
+ht = HUKG_trim(ht)
+ht.data.data[ht.data.mask] = 0.5
+msk = ht.data.mask 
+ht_in = tf.convert_to_tensor(ht.data.data, np.float32)
+ht_in = tf.reshape(ht_in, [1, 1440, 896, 1])
+
+# Make the ERA5 tensor for the specified date
+sys.path.append(
+    "%s/../../../data/prepare_training_tensors_ERA5_HKUG_Tmax" % os.path.dirname(__file__)
+)
+from ERA5_load import ERA5_load_Tmax
+from ERA5_load import ERA5_load_Tmax_climatology
+
+et = ERA5_load_Tmax(args.year, args.month, args.day)
+ec = ERA5_load_Tmax_climatology(args.year, args.month, args.day)
+et = et - ec
+et /= 10
+et += 0.5
+# Convert it to HadUKGrid grid
+et = et.regrid(ht, iris.analysis.Linear())
+# discard bottom left to make sizes multiply divisible by 2
+et = HUKG_trim(et)
+et_in = tf.convert_to_tensor(et.data, np.float32)
+et_in = tf.reshape(et_in, [1, 1440, 896, 1])
+
+# Set up the model and load the weights at the chosen epoch
+sys.path.append("%s/.." % os.path.dirname(__file__))
+from autoencoderModel import DCVAE
 
 autoencoder = DCVAE()
 weights_dir = (
@@ -52,17 +89,19 @@ load_status = autoencoder.load_weights("%s/ckpt" % weights_dir).expect_partial()
 # Check the load worked
 load_status.assert_existing_objects_matched()
 
-# Get the field to use
-count = 0
-for t_in in testData:
-    if count == args.case:
-        break
-    count += 1
 
 # Make encoded version
-encoded = tf.convert_to_tensor(
-    autoencoder.predict_on_batch(tf.reshape(t_in[0], [1, 1440, 896, 1]))
-)
+encoded = autoencoder.predict_on_batch(tf.reshape(et_in, [1, 1440, 896, 1]))
+encoded = np.squeeze(encoded)
+encoded[msk]=0.5
+encoded = tf.convert_to_tensor(encoded, np.float32)
+encoded = tf.reshape(encoded, [1, 1440, 896, 1])
+
+# Discard masked components of ERA5
+et_in = tf.squeeze(et_in).numpy()
+et_in[msk]=0.5
+et_in = tf.convert_to_tensor(et_in, np.float32)
+et_in = tf.reshape(et_in, [1, 1440, 896, 1])
 
 # Make the figure
 lm = get_land_mask()
@@ -87,11 +126,11 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_Tmax(
     ax_of,
-    (t_in[1] - 0.5) * 10,
+    (ht_in - 0.5) * 10,
     vMin=-5,
     vMax=5,
     land=lm,
-    label="Original: %d" % args.case,
+    label="Original: %04d-%02d-%02d" % (args.year,args.month,args.day),
 )
 ax_ocb = fig.add_axes([0.0365, 0.505, 0.27, 0.05])
 plot_colourbar(fig, ax_ocb, ofp)
@@ -102,7 +141,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_Tmax(
     ax_of,
-    (t_in[0] - 0.5) * 10,
+    (et_in - 0.5) * 10,
     vMin=-5,
     vMax=5,
     land=lm,
@@ -117,7 +156,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_Tmax(
     ax_of,
-    (t_in[0] - t_in[1]) * 10,
+    (et_in - ht_in) * 10,
     vMin=-5,
     vMax=5,
     land=lm,
@@ -147,44 +186,44 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_Tmax(
     ax_of,
-    (encoded - t_in[1]) * 10,
+    (encoded - ht_in) * 10,
     vMin=-5,
     vMax=5,
     land=lm,
     label="Generator Difference",
 )
-ax_ocb = fig.add_axes([0.78, 0.005, 0.27, 0.05])
+ax_ocb = fig.add_axes([0.6965, 0.005, 0.27, 0.05])
 plot_colourbar(fig, ax_ocb, ofp)
 
 # Bottom right - scatterplots
 
-xmin = np.min(
+xmin = (np.min(
     np.concatenate(
         (
-            t_in[0].numpy().flatten(),
-            t_in[1].numpy().flatten(),
+            ht_in.numpy().flatten(),
+            et_in.numpy().flatten(),
             encoded.numpy().flatten(),
         )
     )
-)
-xmax = np.max(
+)-0.5)*10
+xmax = (np.max(
     np.concatenate(
         (
-            t_in[0].numpy().flatten(),
-            t_in[1].numpy().flatten(),
+            ht_in.numpy().flatten(),
+            et_in.numpy().flatten(),
             encoded.numpy().flatten(),
         )
     )
-)
+) -0.5)*10
 ax_scatter = fig.add_axes([0.05, 0.29, 0.22, 0.22])
 plot_scatter(
-    ax_scatter, t_in[1], t_in[0], xlab="Original", ylab="ERA5", d_min=xmin, d_max=xmax
+    ax_scatter, ht_in, et_in, xlab="Original", ylab="ERA5", d_min=xmin, d_max=xmax
 )
 
 ax_scatter2 = fig.add_axes([0.05, 0.05, 0.22, 0.22])
 plot_scatter(
     ax_scatter2,
-    t_in[1],
+    ht_in,
     encoded,
     xlab="Original",
     ylab="Generator",

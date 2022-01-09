@@ -106,6 +106,8 @@ def plot_scatter(
         cmap=cmocean.cm.ice_r,
         bins="log",
         mincnt=1,
+        extent=(d_min,d_max,d_min,d_max),
+        zorder=50
     )
     ax.add_line(
         matplotlib.lines.Line2D(
