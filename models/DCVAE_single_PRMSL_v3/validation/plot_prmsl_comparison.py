@@ -74,10 +74,12 @@ def plot_PRMSL(
     # Observations
     if obs is not None:
         obs = tf.squeeze(obs)
-        ax.scatter(
-            (obs[:, 1].numpy() / 160) * 360 - 180,
-            (obs[:, 0].numpy() / 80) * 180 - 90,
-            s=3.0 * linewidths[2],
+        x = (obs[:,1].numpy()/512)*360-180
+        y = (obs[:,0].numpy()/256)*180-90
+        y *= -1
+        ax.scatter(((x/2).astype(int)+1)*2,
+                   ((y/2).astype(int)+1)*2,
+            s=5.0 * linewidths[2],
             c=obs_c,
             cmap=obs_cmap,
             marker="o",
