@@ -16,6 +16,7 @@ class DCVAE(tf.keras.Model):
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(256, 512, 1)),
+                tf.keras.layers.Dropout(0.6),
                 tf.keras.layers.Conv2D(
                     filters=5,
                     kernel_size=3,
@@ -23,6 +24,7 @@ class DCVAE(tf.keras.Model):
                     padding="same",
                     activation="elu",
                 ),
+                tf.keras.layers.Dropout(0.4),
                 tf.keras.layers.Conv2D(
                     filters=10,
                     kernel_size=3,
@@ -30,6 +32,7 @@ class DCVAE(tf.keras.Model):
                     padding="same",
                     activation="elu",
                 ),
+                tf.keras.layers.Dropout(0.2),
                 tf.keras.layers.Conv2D(
                     filters=20,
                     kernel_size=3,
@@ -37,6 +40,7 @@ class DCVAE(tf.keras.Model):
                     padding="same",
                     activation="elu",
                 ),
+                tf.keras.layers.Dropout(0.1),
                 tf.keras.layers.Conv2D(
                     filters=40,
                     kernel_size=3,
@@ -45,6 +49,7 @@ class DCVAE(tf.keras.Model):
                     activation="elu",
                 ),
                 tf.keras.layers.Flatten(),
+                tf.keras.layers.Dropout(0.1),
                 # No activation
                 tf.keras.layers.Dense(self.latent_dim + self.latent_dim),
             ]
@@ -53,7 +58,7 @@ class DCVAE(tf.keras.Model):
         self.decoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(self.latent_dim,)),
-                tf.keras.layers.Dense(units=16 * 32 * 40, activation=tf.nn.relu),
+                tf.keras.layers.Dense(units=16 * 32 * 40, activation=tf.nn.elu),
                 tf.keras.layers.Reshape(target_shape=(16, 32, 40)),
                 tf.keras.layers.Conv2DTranspose(
                     filters=20,
@@ -134,7 +139,7 @@ def compute_loss(model, x):
     rmse = tf.reduce_mean(tf.keras.metrics.mean_squared_error(encoded, x), axis=[1, 2])
     logpz = log_normal_pdf(latent, 0.0, 0.0)
     logqz_x = log_normal_pdf(latent, mean, logvar)
-    return (rmse * 1000000, logpz, logqz_x)
+    return (rmse * 100000, logpz, logqz_x)
 
 
 @tf.function  # Optimiser ~25% speedup on VDI (CPU-only)
