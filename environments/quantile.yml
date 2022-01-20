@@ -1,0 +1,20 @@
+name: quantile
+channels:
+  - conda-forge
+dependencies:
+# Basics
+  - python=3.10
+  - iris=3.1
+  - parallel
+# Code formatter
+  - black=20.*
+# Some packages are only available via pip
+  - pip=21.2
+  - pip:
+  # Philip's library for Reanalysis data handling
+    - git+ssh://git@github.com/philip-brohan/IRData.git@068a6a55bf5f6f687e0bbd072c7b0fe259884365
+  # Quantile approximation tools
+    - tdigest
+    - cython
+    - pdsa
+
