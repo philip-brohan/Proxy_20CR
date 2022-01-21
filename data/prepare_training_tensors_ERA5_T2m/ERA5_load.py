@@ -21,10 +21,10 @@ def ERA5_quantile_normalise(f, quantiles=None):
     if len(wkg) > 0:
         wkg = 1 - (quantiles[0] - wkg) / (quantiles[1] - quantiles[0])
         res[f.data < quantiles[0]] = wkg
-    for pct in range(0, 99):
+    for pct in range(0, 98):
         wkg = f.data[(f.data >= quantiles[pct]) & (f.data < quantiles[pct + 1])]
         if len(wkg) > 0:
-            wkg = pct + (quantiles[pct + 1] - wkg) / (
+            wkg = pct + 1 + (quantiles[pct + 1] - wkg) / (
                 quantiles[pct + 1] - quantiles[pct]
             )
             res[(f.data >= quantiles[pct]) & (f.data < quantiles[pct + 1])] = wkg
