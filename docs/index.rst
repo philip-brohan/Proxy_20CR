@@ -1,9 +1,13 @@
 Machine Learning for Data Assimilation
 ======================================
+.. figure:: figures/Intro_figure.jpg
+   :width: 95%
+   :align: center
+   :figwidth: 95%
+
 
 `Reanalysis <https://reanalyses.org>`_ is awesome, but it's too slow and too expensive. Can we make it cheaper?
 
-|
 
 .. toctree::
    :titlesonly:

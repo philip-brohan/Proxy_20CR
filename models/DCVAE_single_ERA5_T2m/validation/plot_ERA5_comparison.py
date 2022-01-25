@@ -34,6 +34,7 @@ def plot_T2m(
     fog_threshold=0.5,
     fog_steepness=10,
     obs=None,
+    obs_c=None,
     o_size=1,
     land=None,
     label=None,
@@ -46,60 +47,84 @@ def plot_T2m(
         lons, lats, land.data, cmap="Greys", alpha=0.1, vmax=1.1, vmin=-0.5, zorder=100
     )
     # Field data
-
-    if fog is not None:
-        mtmx = np.ma.masked_where(tf.squeeze(fog).numpy()>fog_threshold,tf.squeeze(tmx).numpy())
-        T_img = ax.pcolormesh(
-            lons,
-            lats,
-            mtmx,
-            shading='auto',
-            cmap="RdYlBu_r", #cmocean.cm.balance, #"RdYlBu_r",
-            vmin=vMin,
-            vmax=vMax,
-            alpha=1.0,
-            zorder=40,
-        )
-    else:
+    T_img = None
+    if tmx is not None:
         T_img = ax.pcolormesh(
             lons,
             lats,
             tf.squeeze(tmx).numpy(),
-            shading='auto',
-            cmap="RdYlBu_r", #cmocean.cm.balance, #"RdYlBu_r",
+            shading="auto",
+            cmap="RdYlBu_r",  # cmocean.cm.balance, #"RdYlBu_r",
             vmin=vMin,
             vmax=vMax,
             alpha=1.0,
             zorder=40,
         )
-    # Fog of ignorance
-#    if fog is not None:
-#        def fog_map(x): 
-#            return 1/(1+math.exp((x-fog_threshold)*fog_steepness*-1))
-#        cols=[]
-#        for ci in range(100):
-#            cols.append([0.2,0.2,0.2,fog_map(ci/100)])
-#
-#        fog_img = ax.pcolorfast(lons, lats, tf.squeeze(fog).numpy(),
-#                                   cmap=matplotlib.colors.ListedColormap(cols),
-#                                   alpha=0.95,
-#                                   vmin=0,
-#                                   vmax=1,
-#                                   zorder=50)
+        # Fog of ignorance
+        if fog is not None:
+            cs = ax.contourf(
+                lons,
+                lats,
+                np.minimum(1.0, tf.squeeze(fog).numpy()),
+                [0, fog_threshold, 1],
+                colors="none",
+                vmin=0,
+                vmax=1,
+                hatches=[None, "///"],
+                extend="upper",
+                zorder=500,
+            )
+            for i, collection in enumerate(cs.collections):
+                collection.set_edgecolor((0.8, 0.8, 0.8))
+            for collection in cs.collections:
+                collection.set_linewidth(0.0)
+            cs = ax.contourf(
+                lons,
+                lats,
+                np.minimum(1.0, tf.squeeze(fog).numpy()),
+                [0, fog_threshold, 1],
+                colors="none",
+                vmin=0,
+                vmax=1,
+                hatches=[None, "\\\\\\"],
+                extend="upper",
+                zorder=500,
+            )
+            for i, collection in enumerate(cs.collections):
+                collection.set_edgecolor((0.8, 0.8, 0.8))
+            for collection in cs.collections:
+                collection.set_linewidth(0.0)
 
-   # Observations
+    # Observations
     if obs is not None:
         obs = tf.squeeze(obs)
-        x = (obs[:,1].numpy()/1440)*360-180
-        y = (obs[:,0].numpy()/720)*180-90
+        x = (obs[:, 1].numpy() / 1440) * 360 - 180
+        y = (obs[:, 0].numpy() / 720) * 180 - 90
         y *= -1
-        ax.scatter(((x/2).astype(int)+1)*2,
-                   ((y/2).astype(int)+1)*2,
-                s=3.0*o_size,
-                c='black',
-                marker='o',
+        if obs_c is None:
+            ax.scatter(
+                ((x / 2).astype(int) + 1) * 2,
+                ((y / 2).astype(int) + 1) * 2,
+                s=3.0 * o_size,
+                c="black",
+                marker="o",
+                alpha=0.8,
+                zorder=600,
+            )
+        else:
+            ax.scatter(
+                ((x / 2).astype(int) + 1) * 2,
+                ((y / 2).astype(int) + 1) * 2,
+                s=3.0 * o_size,
+                c=obs_c.numpy(),
+                cmap="RdYlBu_r",  # cmocean.cm.balance, #"RdYlBu_r",
+                vmin=vMin,
+                vmax=vMax,
+                marker="o",
                 alpha=1.0,
-                zorder=60)
+                zorder=600,
+            )
+
     if label is not None:
         ax.text(
             lons[0] + (lons[-1] - lons[0]) * 0.02,
@@ -114,7 +139,7 @@ def plot_T2m(
                 boxstyle="round",
                 pad=0.5,
             ),
-            size=matplotlib.rcParams['font.size']/1.5,
+            size=matplotlib.rcParams["font.size"] / 1.5,
             clip_on=True,
             zorder=100,
         )
