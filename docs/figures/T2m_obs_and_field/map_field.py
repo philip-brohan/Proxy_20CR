@@ -151,6 +151,7 @@ canvas = FigureCanvas(fig)
 matplotlib.rcParams["font.size"] = 24
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
 
 ax_of = fig.add_axes([0.01, 0.01, 0.98, 0.98])
 ax_of.set_aspect("auto")

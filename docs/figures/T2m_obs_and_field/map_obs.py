@@ -104,6 +104,7 @@ canvas = FigureCanvas(fig)
 matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
 lm = get_land_mask()
 
 # Obs only

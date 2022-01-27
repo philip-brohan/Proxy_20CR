@@ -170,6 +170,10 @@ canvas = FigureCanvas(fig)
 matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
+
 lm = get_land_mask()
 # Bottom - original field
 ax_of = fig.add_axes([0.075, 0.065, 0.85, 0.425])
@@ -211,8 +215,7 @@ efp = plot_T2m(
     vMin=-10,
     vMax=10,
     fog=(e_std / c_std),
-    fog_threshold=0.1,
-    fog_steepness=20,
+    fog_threshold=0.33,
     obs=t_obs,
     o_size=0.5,
     land=lm,
@@ -221,6 +224,6 @@ efp = plot_T2m(
 ax_ecb = fig.add_axes([0.05, 0.525, 0.81, 0.02])
 plot_colourbar(fig, ax_ecb, efp)
 
-pickle.dump((t_in, e_mean, c_std, e_std, t_obs), open("tst.pkl", "wb"))
+# pickle.dump((t_in, e_mean, c_std, e_std, t_obs), open("tst.pkl", "wb"))
 
-fig.savefig("fit_multi.png")
+fig.savefig("fit_multi.png", facecolor="white")

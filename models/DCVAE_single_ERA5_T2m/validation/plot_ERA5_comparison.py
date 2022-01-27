@@ -54,45 +54,51 @@ def plot_T2m(
             lats,
             tf.squeeze(tmx).numpy(),
             shading="auto",
-            cmap="RdYlBu_r",  # cmocean.cm.balance, #"RdYlBu_r",
+            cmap=cmocean.cm.balance, #"RdYlBu_r",
             vmin=vMin,
             vmax=vMax,
             alpha=1.0,
             zorder=40,
         )
         # Fog of ignorance
+        nLevels = 10
+        levels=np.concatenate(([0],np.linspace(0.33,1,num=nLevels)))
         if fog is not None:
             cs = ax.contourf(
                 lons,
                 lats,
                 np.minimum(1.0, tf.squeeze(fog).numpy()),
-                [0, fog_threshold, 1],
+                levels,
                 colors="none",
                 vmin=0,
                 vmax=1,
-                hatches=[None, "///"],
+                hatches=[None]+["///"]*(nLevels-1),
                 extend="upper",
                 zorder=500,
             )
+            nCols = len(cs.collections)
+            alphas = np.linspace(0,1,num=nCols)
             for i, collection in enumerate(cs.collections):
-                collection.set_edgecolor((0.8, 0.8, 0.8))
-            for collection in cs.collections:
+                collection.set_edgecolor((0,0,0))
+                collection.set_alpha(alphas[i])
+                collection.set_facecolor('none')
                 collection.set_linewidth(0.0)
             cs = ax.contourf(
                 lons,
                 lats,
                 np.minimum(1.0, tf.squeeze(fog).numpy()),
-                [0, fog_threshold, 1],
+                levels,
                 colors="none",
                 vmin=0,
                 vmax=1,
-                hatches=[None, "\\\\\\"],
+                hatches=[None]+["\\\\\\"]*(nLevels-1),
                 extend="upper",
                 zorder=500,
             )
             for i, collection in enumerate(cs.collections):
-                collection.set_edgecolor((0.8, 0.8, 0.8))
-            for collection in cs.collections:
+                collection.set_edgecolor((0,0,0))
+                collection.set_alpha(alphas[i])
+                collection.set_facecolor('none')
                 collection.set_linewidth(0.0)
 
     # Observations
@@ -106,7 +112,7 @@ def plot_T2m(
                 ((x / 2).astype(int) + 1) * 2,
                 ((y / 2).astype(int) + 1) * 2,
                 s=3.0 * o_size,
-                c="black",
+                c='black',
                 marker="o",
                 alpha=0.8,
                 zorder=600,
