@@ -85,6 +85,9 @@ fig = Figure(
 canvas = FigureCanvas(fig)
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
 
 # Top left - original field
 ax_of = fig.add_axes([0.01, 0.565, 0.485, 0.425])
@@ -92,7 +95,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (t_in - 0.5) * 15,
+    tf.squeeze(t_in - 0.5).numpy() * 15,
     vMin=-10,
     vMax=10,
     land=lm,
@@ -107,7 +110,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (encoded - 0.5) * 15,
+    tf.squeeze(encoded - 0.5).numpy() * 15,
     vMin=-10,
     vMax=10,
     land=lm,
@@ -122,7 +125,7 @@ ax_of.set_aspect("auto")
 ax_of.set_axis_off()
 ofp = plot_T2m(
     ax_of,
-    (encoded - t_in) * 15,
+    tf.squeeze(encoded - t_in).numpy() * 15,
     vMin=-10,
     vMax=10,
     land=lm,
@@ -134,7 +137,7 @@ plot_colourbar(fig, ax_ocb, ofp)
 # Bottom right - scatterplot
 
 ax_scatter = fig.add_axes([0.67, 0.05, 0.2, 0.4])
-plot_scatter(ax_scatter, t_in, encoded, d_max=15, d_min=-15)
+plot_scatter(ax_scatter, t_in.numpy(), encoded.numpy(), d_max=15, d_min=-15)
 
 
 fig.savefig("comparison.png")

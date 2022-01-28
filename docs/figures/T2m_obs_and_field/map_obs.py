@@ -105,6 +105,9 @@ matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
 ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
+
 lm = get_land_mask()
 
 # Obs only
@@ -118,8 +121,8 @@ efp = plot_T2m(
     None,
     vMin=-10,
     vMax=10,
-    obs=t_obs,
-    obs_c=(approx - 0.5) * 15,
+    obs=tf.squeeze(t_obs).numpy(),
+    obs_c=(tf.squeeze(approx).numpy() - 0.5) * 15,
     o_size=args.osize,
     land=lm,
     label="",

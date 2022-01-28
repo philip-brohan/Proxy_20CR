@@ -183,7 +183,7 @@ ax_of.set_xlim(-180, 180)
 ax_of.set_ylim(-90, 90)
 ofp = plot_T2m(
     ax_of,
-    (t_in - 0.5) * 15,
+    (tf.squeeze(t_in).numpy() - 0.5) * 15,
     vMin=-10,
     vMax=10,
     land=lm,
@@ -211,12 +211,12 @@ ax_ef.set_xlim(-180, 180)
 ax_ef.set_ylim(-90, 90)
 efp = plot_T2m(
     ax_ef,
-    (e_mean - 0.5) * 15,
+    (tf.squeeze(e_mean).numpy() - 0.5) * 15,
     vMin=-10,
     vMax=10,
-    fog=(e_std / c_std),
+    fog=tf.squeeze((e_std / c_std)).numpy(),
     fog_threshold=0.33,
-    obs=t_obs,
+    obs=tf.squeeze(t_obs).numpy(),
     o_size=0.5,
     land=lm,
     label="Obs of: %04d-%02d-%02d" % (args.oyear, args.month, args.day),

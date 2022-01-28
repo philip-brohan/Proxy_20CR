@@ -7,7 +7,7 @@ import math
 
 # import iris
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 import matplotlib
 import cmocean
 
@@ -39,6 +39,8 @@ def plot_T2m(
     land=None,
     label=None,
 ):
+
+    
     if land is None:
         land = get_land_mask()
     lats = land.coord("latitude").points
@@ -52,7 +54,7 @@ def plot_T2m(
         T_img = ax.pcolormesh(
             lons,
             lats,
-            tf.squeeze(tmx).numpy(),
+            tmx,
             shading="auto",
             cmap=cmocean.cm.balance, #"RdYlBu_r",
             vmin=vMin,
@@ -67,7 +69,7 @@ def plot_T2m(
             cs = ax.contourf(
                 lons,
                 lats,
-                np.minimum(1.0, tf.squeeze(fog).numpy()),
+                np.minimum(1.0, fog),
                 levels,
                 colors="none",
                 vmin=0,
@@ -86,7 +88,7 @@ def plot_T2m(
             cs = ax.contourf(
                 lons,
                 lats,
-                np.minimum(1.0, tf.squeeze(fog).numpy()),
+                np.minimum(1.0, fog),
                 levels,
                 colors="none",
                 vmin=0,
@@ -103,9 +105,8 @@ def plot_T2m(
 
     # Observations
     if obs is not None:
-        obs = tf.squeeze(obs)
-        x = (obs[:, 1].numpy() / 1440) * 360 - 180
-        y = (obs[:, 0].numpy() / 720) * 180 - 90
+        x = (obs[:, 1] / 1440) * 360 - 180
+        y = (obs[:, 0] / 720) * 180 - 90
         y *= -1
         if obs_c is None:
             ax.scatter(
@@ -122,8 +123,8 @@ def plot_T2m(
                 ((x / 2).astype(int) + 1) * 2,
                 ((y / 2).astype(int) + 1) * 2,
                 s=3.0 * o_size,
-                c=obs_c.numpy(),
-                cmap="RdYlBu_r",  # cmocean.cm.balance, #"RdYlBu_r",
+                c=obs_c,
+                cmap=cmocean.cm.balance, #"RdYlBu_r",
                 vmin=vMin,
                 vmax=vMax,
                 marker="o",
@@ -153,8 +154,8 @@ def plot_T2m(
 
 
 def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5):
-    x = (t_in.numpy().flatten() - 0.5) * 10
-    y = (t_out.numpy().flatten() - 0.5) * 10
+    x = (t_in.flatten() - 0.5) * 10
+    y = (t_out.flatten() - 0.5) * 10
     #    if land is not None:
     #        ld = land.data.flatten
     y = y[x != 0]
