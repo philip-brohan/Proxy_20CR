@@ -16,6 +16,10 @@ def mfetch(var, dte, version="3"):
         twcr.fetch(var, dte, version=version)
 
 
+for year in [1919, 1929, 1939, 1949, 1959]:
+    dte = datetime.datetime(year, 1, 1)
+    mfetch("observations", dte, version="3")
+
 for year in [1903, 1916]:
     dte = datetime.datetime(year, 1, 1)
     mfetch("PRMSL", dte, version="3")
