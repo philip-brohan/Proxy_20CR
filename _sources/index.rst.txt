@@ -146,10 +146,10 @@ Examples of use
    :titlesonly:
    :maxdepth: 1
 
-   Not just T2m - assimilating mslp <mslp>
-   Not just one variable - finding mslp by assimilating wind observations <multi-variable>
    You don't have to start from GCM output - working with haduk-grid <haduk-grid>
    Assimilating things other than observations - dataset to dataset conversion <conversion>
+   Not just T2m - assimilating mslp <mslp>
+   Not just one variable - finding mslp by assimilating wind observations <multi-variable>
 
 Small print
 -----------

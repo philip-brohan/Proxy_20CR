@@ -41,7 +41,17 @@
             
   <div class="section" id="working-with-haduk-grid">
 <h1>Working with haduk-grid<a class="headerlink" href="#working-with-haduk-grid" title="Permalink to this headline">¶</a></h1>
-<p>ToDo.</p>
+<p>A weakness of this ML-reanalysis approach is that we have been using samples from a preexisting reanalysis to train the VAE. This makes the process somewhat circular - it would be more powerful if we could generate the VAE some other way.</p>
+<p>One possibility for this is to train the VAE on pure observations, and the easy place to start is with an existing observational dataset - here we are using <a class="reference external" href="https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid">HadUK-Grid</a>, specifically the daily maximum air temperature.</p>
+<div class="figure align-center" style="width: 65%">
+<a class="reference internal image-reference" href="_images/comparison.jpg"><img alt="_images/comparison.jpg" src="_images/comparison.jpg" style="width: 65%;" /></a>
+</div>
+<div class="figure align-center" style="width: 65%">
+<a class="reference internal image-reference" href="_images/fit_full.jpg"><img alt="_images/fit_full.jpg" src="_images/fit_full.jpg" style="width: 65%;" /></a>
+</div>
+<div class="figure align-center" style="width: 65%">
+<a class="reference internal image-reference" href="_images/fit_decimated.jpg"><img alt="_images/fit_decimated.jpg" src="_images/fit_decimated.jpg" style="width: 65%;" /></a>
+</div>
 </div>
 
 
