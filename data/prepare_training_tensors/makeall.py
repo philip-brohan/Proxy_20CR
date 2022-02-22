@@ -27,7 +27,7 @@ def is_done(variable, year, month, day, hour, group):
 f = open("run.txt", "w+")
 
 start_day = datetime.datetime(1969, 1, 1, 0)
-end_day = datetime.datetime(2009, 12, 31, 23)
+end_day = datetime.datetime(2009, 12, 31, 23) # 2009
 
 for variable in ["prmsl"]:
     current_day = start_day

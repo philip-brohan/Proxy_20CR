@@ -1,4 +1,8 @@
 Dataset to dataset conversion
 =============================
 
-ToDo.
+.. figure:: figures/conversion/comparison.jpg
+   :width: 85%
+   :align: center
+   :figwidth: 85%
+

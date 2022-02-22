@@ -84,7 +84,7 @@ def plot_Tmax(
                 boxstyle="round",
                 pad=0.5,
             ),
-            size=8,
+            size=16,
             clip_on=True,
             zorder=100,
         )

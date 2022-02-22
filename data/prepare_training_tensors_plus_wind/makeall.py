@@ -34,7 +34,7 @@ def is_done(year, month, day, hour, group):
 f = open("run.txt", "w+")
 
 start_day = datetime.datetime(1969, 1, 3, 0)
-end_day = datetime.datetime(2009, 12, 29, 23)
+end_day = datetime.datetime(2009, 12, 29, 23) # 2009
 
 current_day = start_day
 count = 1

@@ -117,8 +117,12 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
 
 # Top left - original field
 ax_of = fig.add_axes([0.01, 0.565, 0.323, 0.425])
@@ -215,12 +219,12 @@ xmax = (np.max(
         )
     )
 ) -0.5)*10
-ax_scatter = fig.add_axes([0.05, 0.29, 0.22, 0.22])
+ax_scatter = fig.add_axes([0.07, 0.29, 0.22, 0.22])
 plot_scatter(
     ax_scatter, ht_in, et_in, xlab="Original", ylab="ERA5", d_min=xmin, d_max=xmax
 )
 
-ax_scatter2 = fig.add_axes([0.05, 0.05, 0.22, 0.22])
+ax_scatter2 = fig.add_axes([0.07, 0.05, 0.22, 0.22])
 plot_scatter(
     ax_scatter2,
     ht_in,

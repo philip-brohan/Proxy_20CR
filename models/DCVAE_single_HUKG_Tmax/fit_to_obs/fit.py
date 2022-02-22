@@ -73,6 +73,7 @@ t_lons = (obs["projection_x_coordinate"] - lon_min) / (lon_max - lon_min)
 if args.obs_decimate is not None:
     t_lats = t_lats[::args.obs_decimate]
     t_lons = t_lons[::args.obs_decimate]
+print("No of obs. = %d" % len(t_lons))
 t_lats = tf.convert_to_tensor(t_lats, tf.float32)
 t_lons = tf.convert_to_tensor(t_lons, tf.float32)
 t_obs = tf.stack((t_lats * 1440, t_lons * 896), axis=1)
@@ -144,8 +145,12 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
 
 # Top left - original field
 ax_of = fig.add_axes([0.01, 0.565, 0.485, 0.425])

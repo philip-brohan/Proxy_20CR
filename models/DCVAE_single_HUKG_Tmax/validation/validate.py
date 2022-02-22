@@ -73,8 +73,12 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+matplotlib.rcParams.update({"font.size": 16})
 
 ax_global = fig.add_axes([0, 0, 1, 1], facecolor="white")
+ax_global.set_axis_off()
+ax_global.autoscale(enable=False)
+ax_global.fill((-0.1, 1.1, 1.1, -0.1), (-0.1, -0.1, 1.1, 1.1), "white")
 
 # Top left - original field
 ax_of = fig.add_axes([0.01, 0.565, 0.485, 0.425])
@@ -101,7 +105,7 @@ ofp = plot_Tmax(
     vMin=-5,
     vMax=5,
     land=lm,
-    label="Encoded",
+    label="Generated",
 )
 ax_ocb = fig.add_axes([0.57, 0.505, 0.405, 0.05])
 plot_colourbar(fig, ax_ocb, ofp)
