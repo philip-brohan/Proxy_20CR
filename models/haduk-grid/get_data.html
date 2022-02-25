@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HadUK-Grid Tmax - get the training data &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="HadUK-Grid Tmax - convert the data into tf.Tensors" href="to_tensor.html" />
+    <link rel="prev" title="Working with haduk-grid" href="../../haduk-grid.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="HadUK-Grid Tmax - convert the data into tf.Tensors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../haduk-grid.html" title="Working with haduk-grid"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../haduk-grid.html" accesskey="U">Working with haduk-grid</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HadUK-Grid Tmax - get the training data</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="haduk-grid-tmax-get-the-training-data">
+<h1>HadUK-Grid Tmax - get the training data<a class="headerlink" href="#haduk-grid-tmax-get-the-training-data" title="Permalink to this headline">¶</a></h1>
+<p>Ideally I’d put in here a script to download the training data to use. This time, however, I cheated and used pre-prepared data provided by a colleague at the Met Office (thanks Mark). So you are on your own for this one.</p>
+<p>You can get the data I used from <a class="reference external" href="https://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb">CEDA</a> but I don’t have a pre-prepared script for it. (Download the daily Tmax, and the monthly Tmax climatology).</p>
+<p>Utility script for data access (imported in most other scripts using this data):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load daily tmax data from HadUKGrid</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">netCDF4</span>
+<span class="kn">import</span> <span class="nn">calendar</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+
+<span class="k">def</span> <span class="nf">HUKG_trim</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">896</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1440</span><span class="p">):</span>
+    <span class="n">xmin</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;projection_x_coordinate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">]</span>
+    <span class="n">cx</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">projection_x_coordinate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&gt;=</span> <span class="n">xmin</span><span class="p">)</span>
+    <span class="n">ymin</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;projection_y_coordinate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="o">-</span><span class="n">y</span><span class="p">]</span>
+    <span class="n">cy</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">projection_y_coordinate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&gt;=</span> <span class="n">ymin</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">cx</span> <span class="o">&amp;</span> <span class="n">cy</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">HUKG_load_tmax</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">year</span> <span class="o">&gt;</span> <span class="mi">2018</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;series_archive_provisional/grid/daily_maxtemp/</span><span class="si">%04d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;v1.0.3.0/grid/daily_maxtemp/</span><span class="si">%04d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%02d</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">day</span>
+    <span class="n">hdata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">hdata</span>
+
+<span class="k">def</span> <span class="nf">HUKG_load_observations</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">year</span> <span class="o">&gt;</span> <span class="mi">2018</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;series_archive_provisional/station/daily_maxtemp/</span><span class="si">%04d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;v1.0.3.0/station/daily_maxtemp/</span><span class="si">%04d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%02d</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">day</span>
+    <span class="n">nc</span> <span class="o">=</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;projection_x_coordinate&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;projection_x_coordinate&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="s1">&#39;projection_y_coordinate&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;projection_y_coordinate&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="s1">&#39;Tmax&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;daily_maxtemp&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">}</span>
+
+
+<span class="c1"># Get an approximate daily climatology from the HadUKGrid monthlies</span>
+<span class="k">def</span> <span class="nf">HUKG_load_tmax_climatology</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/v1.0.3.0/&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;monthly_maxtemp_climatology/&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;1981-2010/&quot;</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">day</span> <span class="o">==</span> <span class="mi">15</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">calendar</span><span class="o">.</span><span class="n">month_abbr</span><span class="p">[</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">hdata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">day</span> <span class="o">&lt;</span> <span class="mi">15</span><span class="p">:</span>
+        <span class="n">dte</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+        <span class="n">dt2</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+        <span class="n">dt1</span> <span class="o">=</span> <span class="n">dt2</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+        <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">dt1</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">dt1</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+        <span class="n">fn1</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">calendar</span><span class="o">.</span><span class="n">month_abbr</span><span class="p">[</span><span class="n">dt1</span><span class="o">.</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">hdata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fn1</span><span class="p">))</span>
+        <span class="n">fn2</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">calendar</span><span class="o">.</span><span class="n">month_abbr</span><span class="p">[</span><span class="n">dt2</span><span class="o">.</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">hd2</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fn2</span><span class="p">))</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="p">(</span><span class="n">dt2</span> <span class="o">-</span> <span class="n">dte</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="n">dt2</span> <span class="o">-</span> <span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="n">hdata</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">hdata</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">hd2</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">weight</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dte</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+        <span class="n">dt1</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+        <span class="n">dt2</span> <span class="o">=</span> <span class="n">dt1</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+        <span class="n">dt2</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">dt2</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">dt2</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+        <span class="n">fn1</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">calendar</span><span class="o">.</span><span class="n">month_abbr</span><span class="p">[</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">hdata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fn1</span><span class="p">))</span>
+        <span class="n">fn2</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">calendar</span><span class="o">.</span><span class="n">month_abbr</span><span class="p">[</span><span class="n">dt2</span><span class="o">.</span><span class="n">month</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">hd2</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fn2</span><span class="p">))</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="p">(</span><span class="n">dt2</span> <span class="o">-</span> <span class="n">dte</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="n">dt2</span> <span class="o">-</span> <span class="n">dt1</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="n">hdata</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">hdata</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">hd2</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">weight</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hdata</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="HadUK-Grid Tmax - convert the data into tf.Tensors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../haduk-grid.html" title="Working with haduk-grid"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../haduk-grid.html" >Working with haduk-grid</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HadUK-Grid Tmax - get the training data</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

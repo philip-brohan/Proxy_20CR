@@ -14,8 +14,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Finding mean-sea-level pressure by assimilating wind observations" href="multi-variable.html" />
-    <link rel="prev" title="Data Assimilation by optimisation in latent space" href="optimiser.html" /> 
+    <link rel="next" title="Mean-sea-level pressure - get the training data" href="models/mslp/get_data.html" />
+    <link rel="prev" title="ERA5 to HadUK-Grid - validate the trained VAE" href="models/conversion/validation.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,10 +24,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+          <a href="models/mslp/get_data.html" title="Mean-sea-level pressure - get the training data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
+          <a href="models/conversion/validation.html" title="ERA5 to HadUK-Grid - validate the trained VAE"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Assimilating mean-sea-level pressure</a></li> 
@@ -41,12 +41,33 @@
             
   <div class="section" id="assimilating-mean-sea-level-pressure">
 <h1>Assimilating mean-sea-level pressure<a class="headerlink" href="#assimilating-mean-sea-level-pressure" title="Permalink to this headline">¶</a></h1>
-<div class="figure align-center" style="width: 95%">
+<p>What if we try a different variable? I’m going to look at mean-sea-level pressure (mslp) from the <a class="reference external" href="https://psl.noaa.gov/data/gridded/data.20thC_ReanV2c.html">20th Century Reanalysis version 2c</a>.</p>
+<p>The process is the same as <a class="reference internal" href="model.html"><span class="doc">with ERA5 global T2m data</span></a> except that the data format is slightly different (much lower resolution). mslp has less high-spatial-frequency variability than T2m, and we’re going to take advantage of that by plotting it as contour plots and <a class="reference external" href="https://brohan.org/offline_assimilation/analyses/spaghetti_contour/spaghetti_contour.html">spaghetti plots</a> which show differences more clearly.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/get_data.html">Get the training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/to_tensor.html">Convert the training data to tf tensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/make_dataset.html">Package the tensors into a tf Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/VAE.html">Specify the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/training.html">Train the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/validation.html">Validate the trained VAE</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id1" style="width: 95%">
 <a class="reference internal image-reference" href="_images/comparison2.jpg"><img alt="_images/comparison2.jpg" src="_images/comparison2.jpg" style="width: 95%;" /></a>
+<p class="caption"><span class="caption-text">VAE validation: Red contours are from the input dataset, blue contours show generator output. The two left hand plots show comparisons of two cases from the training dataset, the middle plots two cases from the test dataset, and the right hand plots two examples of generator output.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
-<div class="figure align-center" style="width: 85%">
+<p>Assimilation is done exactly as <a class="reference internal" href="optimiser.html"><span class="doc">with ERA5 global T2m data</span></a>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/mslp/optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id2" style="width: 85%">
 <a class="reference internal image-reference" href="_images/fit_multi.jpg"><img alt="_images/fit_multi.jpg" src="_images/fit_multi.jpg" style="width: 85%;" /></a>
+<p class="caption"><span class="caption-text">Assimilation validation: Red contours are from the input dataset, blue contours show generator output - for each of 25 samples with a different starting point in latent space. Black dots mark the locations of observations assimilated.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
+<p>As with T2m the assimilation works as expected - constraining the generated mslp field in locations lose to observations, but not in regions where there are no observations.</p>
 </div>
 
 
@@ -67,10 +88,10 @@
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Not just T2m - assimilating mslp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="how_to.html">How to reproduce or extend this work</a></li>
@@ -97,10 +118,10 @@ Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+          <a href="models/mslp/get_data.html" title="Mean-sea-level pressure - get the training data"
              >next</a> |</li>
         <li class="right" >
-          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
+          <a href="models/conversion/validation.html" title="ERA5 to HadUK-Grid - validate the trained VAE"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Assimilating mean-sea-level pressure</a></li> 

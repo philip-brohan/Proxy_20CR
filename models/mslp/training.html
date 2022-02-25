@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mean-sea-level pressure - train the Variational AutoEncoder &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Mean-sea-level pressure - validate the trained VAE" href="validation.html" />
+    <link rel="prev" title="Mean-sea-level pressure - specify a Variational AutoEncoder" href="VAE.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="validation.html" title="Mean-sea-level pressure - validate the trained VAE"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="VAE.html" title="Mean-sea-level pressure - specify a Variational AutoEncoder"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../mslp.html" accesskey="U">Assimilating mean-sea-level pressure</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Mean-sea-level pressure - train the Variational AutoEncoder</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="mean-sea-level-pressure-train-the-variational-autoencoder">
+<h1>Mean-sea-level pressure - train the Variational AutoEncoder<a class="headerlink" href="#mean-sea-level-pressure-train-the-variational-autoencoder" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Convolutional Variational Autoencoder for 20CR2c MSLP</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--epoch&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Restart from epoch&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="c1"># Distribute across all GPUs</span>
+<span class="c1"># strategy = tf.distribute.MirroredStrategy()</span>
+<span class="c1"># Doesn&#39;t yet work - need to change the training loop and datasets to be</span>
+<span class="c1">#  strategy aware.</span>
+<span class="n">strategy</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">distribute</span><span class="o">.</span><span class="n">get_strategy</span><span class="p">()</span>
+
+<span class="c1"># Load the model specification</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/.&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">autoencoderModel</span> <span class="kn">import</span> <span class="n">DCVAE</span>
+<span class="kn">from</span> <span class="nn">autoencoderModel</span> <span class="kn">import</span> <span class="n">train_step</span>
+<span class="kn">from</span> <span class="nn">autoencoderModel</span> <span class="kn">import</span> <span class="n">compute_loss</span>
+
+<span class="c1"># Load the data source provider</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/../PRMSL_dataset&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">makeDataset</span> <span class="kn">import</span> <span class="n">getDataset</span>
+
+<span class="c1"># How many images to use?</span>
+<span class="n">nTrainingImages</span> <span class="o">=</span> <span class="mi">10782</span>  <span class="c1"># Max is 10782</span>
+<span class="n">nTestImages</span> <span class="o">=</span> <span class="mi">1198</span>  <span class="c1"># Max is 1198</span>
+
+<span class="c1"># How many epochs to train for</span>
+<span class="n">nEpochs</span> <span class="o">=</span> <span class="mi">500</span>
+<span class="c1"># Length of an epoch - if None, same as nTrainingImages</span>
+<span class="n">nImagesInEpoch</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">if</span> <span class="n">nImagesInEpoch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">nImagesInEpoch</span> <span class="o">=</span> <span class="n">nTrainingImages</span>
+
+<span class="c1"># Dataset parameters</span>
+<span class="n">bufferSize</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c1"># Untested</span>
+<span class="n">batchSize</span> <span class="o">=</span> <span class="mi">32</span>  <span class="c1"># Arbitrary</span>
+
+<span class="c1"># Set up the training data</span>
+<span class="n">trainingData</span> <span class="o">=</span> <span class="n">getDataset</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="n">nImages</span><span class="o">=</span><span class="n">nTrainingImages</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">trainingData</span> <span class="o">=</span> <span class="n">trainingData</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">bufferSize</span><span class="p">)</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batchSize</span><span class="p">)</span>
+
+<span class="c1"># Subset of the training data for metrics</span>
+<span class="n">validationData</span> <span class="o">=</span> <span class="n">getDataset</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="n">nImages</span><span class="o">=</span><span class="n">nTestImages</span><span class="p">)</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batchSize</span><span class="p">)</span>
+
+<span class="c1"># Set up the test data</span>
+<span class="n">testData</span> <span class="o">=</span> <span class="n">getDataset</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">nImages</span><span class="o">=</span><span class="n">nTestImages</span><span class="p">)</span>
+<span class="n">testData</span> <span class="o">=</span> <span class="n">testData</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batchSize</span><span class="p">)</span>
+
+<span class="c1"># Instantiate the model</span>
+<span class="k">with</span> <span class="n">strategy</span><span class="o">.</span><span class="n">scope</span><span class="p">():</span>
+    <span class="n">autoencoder</span> <span class="o">=</span> <span class="n">DCVAE</span><span class="p">()</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">)</span>
+    <span class="c1"># If we are doing a restart, load the weights</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">epoch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">weights_dir</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/models/DCVAE_single_PRMSL/&quot;</span> <span class="o">+</span> <span class="s2">&quot;Epoch_</span><span class="si">%04d</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">load_status</span> <span class="o">=</span> <span class="n">autoencoder</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ckpt&quot;</span> <span class="o">%</span> <span class="n">weights_dir</span><span class="p">)</span>
+        <span class="c1"># Check the load worked</span>
+        <span class="n">load_status</span><span class="o">.</span><span class="n">assert_existing_objects_matched</span><span class="p">()</span>
+
+
+<span class="c1"># Save the model weights and the history state after every epoch</span>
+<span class="n">history</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">history</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">history</span><span class="p">[</span><span class="s2">&quot;val_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+    <span class="n">save_dir</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/models/DCVAE_single_PRMSL/&quot;</span> <span class="o">+</span> <span class="s2">&quot;Epoch_</span><span class="si">%04d</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">epoch</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">save_dir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">save_weights</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ckpt&quot;</span> <span class="o">%</span> <span class="n">save_dir</span><span class="p">)</span>
+    <span class="n">history</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+    <span class="c1"># history[&quot;val_loss&quot;].append(logs[&quot;val_loss&quot;])</span>
+    <span class="n">history_file</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/history.pkl&quot;</span> <span class="o">%</span> <span class="n">save_dir</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">history_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+
+
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">epoch</span><span class="o">+</span><span class="n">nEpochs</span><span class="p">):</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">train_x</span> <span class="ow">in</span> <span class="n">trainingData</span><span class="p">:</span>
+        <span class="n">train_step</span><span class="p">(</span><span class="n">autoencoder</span><span class="p">,</span> <span class="n">train_x</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">)</span>
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">train_rmse</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="n">train_logpz</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="n">train_logqz_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">test_x</span> <span class="ow">in</span> <span class="n">validationData</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">rmse</span><span class="p">,</span> <span class="n">logpz</span><span class="p">,</span> <span class="n">logqz_x</span><span class="p">)</span> <span class="o">=</span> <span class="n">compute_loss</span><span class="p">(</span><span class="n">autoencoder</span><span class="p">,</span> <span class="n">test_x</span><span class="p">)</span>
+        <span class="n">train_rmse</span><span class="p">(</span><span class="n">rmse</span><span class="p">)</span>
+        <span class="n">train_logpz</span><span class="p">(</span><span class="n">logpz</span><span class="p">)</span>
+        <span class="n">train_logqz_x</span><span class="p">(</span><span class="n">logqz_x</span><span class="p">)</span>
+    <span class="n">test_rmse</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="n">test_logpz</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="n">test_logqz_x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">Mean</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">test_x</span> <span class="ow">in</span> <span class="n">testData</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">rmse</span><span class="p">,</span> <span class="n">logpz</span><span class="p">,</span> <span class="n">logqz_x</span><span class="p">)</span> <span class="o">=</span> <span class="n">compute_loss</span><span class="p">(</span><span class="n">autoencoder</span><span class="p">,</span> <span class="n">test_x</span><span class="p">)</span>
+        <span class="n">test_rmse</span><span class="p">(</span><span class="n">rmse</span><span class="p">)</span>
+        <span class="n">test_logpz</span><span class="p">(</span><span class="n">logpz</span><span class="p">)</span>
+        <span class="n">test_logqz_x</span><span class="p">(</span><span class="n">logqz_x</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Epoch: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RMSE: </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">train_rmse</span><span class="o">.</span><span class="n">result</span><span class="p">(),</span> <span class="n">test_rmse</span><span class="o">.</span><span class="n">result</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;logpz: </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">train_logpz</span><span class="o">.</span><span class="n">result</span><span class="p">(),</span> <span class="n">test_logpz</span><span class="o">.</span><span class="n">result</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;logqz_x: </span><span class="si">{}</span><span class="s2">, </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">train_logqz_x</span><span class="o">.</span><span class="n">result</span><span class="p">(),</span> <span class="n">test_logqz_x</span><span class="o">.</span><span class="n">result</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">epoch</span><span class="o">%</span><span class="mi">10</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">save_state</span><span class="p">(</span><span class="n">autoencoder</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">test_rmse</span><span class="o">.</span><span class="n">result</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="validation.html" title="Mean-sea-level pressure - validate the trained VAE"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="VAE.html" title="Mean-sea-level pressure - specify a Variational AutoEncoder"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../mslp.html" >Assimilating mean-sea-level pressure</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Mean-sea-level pressure - train the Variational AutoEncoder</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

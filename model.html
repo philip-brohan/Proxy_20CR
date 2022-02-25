@@ -14,7 +14,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Data Assimilation by optimisation in latent space" href="optimiser.html" />
+    <link rel="next" title="ERA5 T2m - get the training data" href="models/ERA5-T2m/get_data.html" />
     <link rel="prev" title="Machine Learning for Data Assimilation" href="index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -24,7 +24,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
+          <a href="models/ERA5-T2m/get_data.html" title="ERA5 T2m - get the training data"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Machine Learning for Data Assimilation"
@@ -41,7 +41,16 @@
             
   <div class="section" id="building-a-generative-model">
 <h1>Building a generative model<a class="headerlink" href="#building-a-generative-model" title="Permalink to this headline">¶</a></h1>
-<p>ToDo.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/get_data.html">Get the training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/to_tensor.html">Convert the training data to tf tensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/make_dataset.html">Package the tensors into a tf Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/VAE.html">Specify the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/training.html">Train the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/validation.html">Validate the trained VAE</a></li>
+</ul>
+</div>
 </div>
 
 
@@ -62,10 +71,10 @@
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="how_to.html">How to reproduce or extend this work</a></li>
@@ -92,7 +101,7 @@ Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
+          <a href="models/ERA5-T2m/get_data.html" title="ERA5 T2m - get the training data"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Machine Learning for Data Assimilation"

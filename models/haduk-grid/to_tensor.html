@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HadUK-Grid Tmax - convert the data into tf.Tensors &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="HadUK-Grid Tmax - make a tf.data.Dataset" href="make_dataset.html" />
+    <link rel="prev" title="HadUK-Grid Tmax - get the training data" href="get_data.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="make_dataset.html" title="HadUK-Grid Tmax - make a tf.data.Dataset"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="get_data.html" title="HadUK-Grid Tmax - get the training data"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../haduk-grid.html" accesskey="U">Working with haduk-grid</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HadUK-Grid Tmax - convert the data into tf.Tensors</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="haduk-grid-tmax-convert-the-data-into-tf-tensors">
+<h1>HadUK-Grid Tmax - convert the data into tf.Tensors<a class="headerlink" href="#haduk-grid-tmax-convert-the-data-into-tf-tensors" title="Permalink to this headline">¶</a></h1>
+<p>Script to make a tensor from a single day’s data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Read in a field from HadUKGrid Tmax as an Iris cube.</span>
+<span class="c1"># Convert it into an anomaly</span>
+<span class="c1"># Cut off the bottom left so it is 896x1440 pixels</span>
+<span class="c1"># Convert it into a TensorFlow tensor.</span>
+<span class="c1"># Serialise it and store it on $SCRATCH.</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Going to do external parallelism - run this on one core</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">threading</span><span class="o">.</span><span class="n">set_inter_op_parallelism_threads</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">dask</span>
+
+<span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="s2">&quot;single-threaded&quot;</span><span class="p">)</span>
+
+
+<span class="kn">import</span> <span class="nn">IRData.twcr</span> <span class="k">as</span> <span class="nn">twcr</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_load_tmax</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_load_tmax_climatology</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_trim</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--year&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Year&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--month&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Integer month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--day&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Day of month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--test&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;test data, not training&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">&quot;--opfile&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;tf data file name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">opfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">purpose</span> <span class="o">=</span> <span class="s2">&quot;training&quot;</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">test</span><span class="p">:</span>
+        <span class="n">purpose</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">opfile</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">/</span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">.tfd&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;haduk-grid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;daily_maxtemp&quot;</span><span class="p">,</span>
+        <span class="n">purpose</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">opfile</span><span class="p">)):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">opfile</span><span class="p">))</span>
+
+<span class="c1"># Load and anomalise data</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">HUKG_load_tmax</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">HUKG_load_tmax_climatology</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">c</span>
+<span class="c1"># Rescale to range 0-1 (approx)</span>
+<span class="n">t</span> <span class="o">/=</span> <span class="mi">10</span>
+<span class="n">t</span> <span class="o">+=</span> <span class="mf">0.5</span>
+<span class="c1"># discard bottom left to make sizes multiply divisible by 2</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">HUKG_trim</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+<span class="c1"># Convert to Tensor</span>
+<span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">ict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="c1"># Write to file</span>
+<span class="n">sict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">serialize_tensor</span><span class="p">(</span><span class="n">ict</span><span class="p">)</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">write_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">opfile</span><span class="p">,</span> <span class="n">sict</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Script to make a tensor for every day in a 40-year period (runs the above script many times):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Make a few thousand tf data files</span>
+<span class="c1">#  for training the VAE models.</span>
+
+<span class="c1"># Get one data file every 5 days</span>
+
+<span class="c1"># Partition off 1/10 of them to be test data</span>
+
+<span class="c1"># This script does not run the commands - it makes a list of commands</span>
+<span class="c1">#  (in the file &#39;run.txt&#39;) which can be run in parallel.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="c1"># Function to check if the job is already done for this timepoint</span>
+<span class="k">def</span> <span class="nf">is_done</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+    <span class="n">op_file_name</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/daily_maxtemp/&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">.tfd&quot;</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">group</span><span class="p">,</span>
+        <span class="n">year</span><span class="p">,</span>
+        <span class="n">month</span><span class="p">,</span>
+        <span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">op_file_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;run.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span>
+
+<span class="n">start_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1969</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">end_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+
+<span class="n">current_day</span> <span class="o">=</span> <span class="n">start_day</span>
+<span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">while</span> <span class="n">current_day</span> <span class="o">&lt;=</span> <span class="n">end_day</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">count</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+            <span class="s2">&quot;test&quot;</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;./make_training_tensor.py --year=</span><span class="si">%d</span><span class="s2"> --month=</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot; --day=</span><span class="si">%d</span><span class="s2"> --test </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+            <span class="s2">&quot;training&quot;</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;./make_training_tensor.py --year=</span><span class="si">%d</span><span class="s2"> --month=</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot; --day=</span><span class="si">%d</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+                <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">current_day</span> <span class="o">=</span> <span class="n">current_day</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="make_dataset.html" title="HadUK-Grid Tmax - make a tf.data.Dataset"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="get_data.html" title="HadUK-Grid Tmax - get the training data"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../haduk-grid.html" >Working with haduk-grid</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HadUK-Grid Tmax - convert the data into tf.Tensors</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

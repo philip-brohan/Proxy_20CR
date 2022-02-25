@@ -14,8 +14,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="How to reproduce and extend this work" href="how_to.html" />
-    <link rel="prev" title="Working with haduk-grid" href="haduk-grid.html" /> 
+    <link rel="next" title="ERA5 to HadUK-Grid - get the training data" href="models/conversion/get_data.html" />
+    <link rel="prev" title="HadUK-Grid Tmax - DA by optimisation in latent space" href="models/haduk-grid/optimiser.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,10 +24,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="how_to.html" title="How to reproduce and extend this work"
+          <a href="models/conversion/get_data.html" title="ERA5 to HadUK-Grid - get the training data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="haduk-grid.html" title="Working with haduk-grid"
+          <a href="models/haduk-grid/optimiser.html" title="HadUK-Grid Tmax - DA by optimisation in latent space"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dataset to dataset conversion</a></li> 
@@ -41,9 +41,32 @@
             
   <div class="section" id="dataset-to-dataset-conversion">
 <h1>Dataset to dataset conversion<a class="headerlink" href="#dataset-to-dataset-conversion" title="Permalink to this headline">¶</a></h1>
-<div class="figure align-center" style="width: 85%">
-<a class="reference internal image-reference" href="_images/comparison1.jpg"><img alt="_images/comparison1.jpg" src="_images/comparison1.jpg" style="width: 85%;" /></a>
+<p>We’ve established a way to assimilate observations - using those observations to find the optimum location in latent space. It would be useful to do the same with things other than observations - in particular we would like to use weather forecasts: If we could generate an observational dataset from a weather forecast, we could make the observational dataset several days before the observations became available.</p>
+<p>This is essentially a dataset conversion problem - can we convert one gridded field into another? Here I’m going to use ERA5 as the input field, and HadUK-Grid as the target, but the same principle will apply to any pair. So again we need a conversion function <code class="docutils literal notranslate"><span class="pre">f()</span></code>, but this time it takes a gridded field as input:</p>
+<div class="figure align-center" style="width: 95%">
+<a class="reference internal image-reference" href="_images/f_ERA_to_field.jpg"><img alt="_images/f_ERA_to_field.jpg" src="_images/f_ERA_to_field.jpg" style="width: 95%;" /></a>
 </div>
+<p>And again the trick is to put the latent space into the middle of the problem - we use our input field to specify a point in latent space, and then generate the target field from that point.</p>
+<div class="figure align-center" style="width: 95%">
+<a class="reference internal image-reference" href="_images/f_ERA_to_latent_to_field.jpg"><img alt="_images/f_ERA_to_latent_to_field.jpg" src="_images/f_ERA_to_latent_to_field.jpg" style="width: 95%;" /></a>
+</div>
+<p>For the right hand half of the problem (generating from the latent space) we can use the generator (of HadUK-Grid Tmax) that we have <a class="reference internal" href="haduk-grid.html"><span class="doc">already trained</span></a>. We could just find the generator output that gives the closest match to the input dataset, but this is only the best thing to do if the input dataset is really good. Most input datasets will have biases - ERA5 clearly does in this example, in particular it’s relatively lower resolution means it’s missing much of the spatial structure in HadUK-Grid. so we can do better by re-using the whole VAE - we train an encoder to convert ERA5 input to latent space, and then use the generator to produce HadUK-Grid output. The encoder can then learn to allow for biases in ERA5.</p>
+<p>So the process is:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/get_data.html">Get the training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/to_tensor.html">Convert the training data to tf tensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/make_dataset.html">Package the tensors into a tf Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/VAE.html">Specify the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/training.html">Train the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/conversion/validation.html">Validate the trained VAE</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id1" style="width: 85%">
+<a class="reference internal image-reference" href="_images/comparison1.jpg"><img alt="_images/comparison1.jpg" src="_images/comparison1.jpg" style="width: 85%;" /></a>
+<p class="caption"><span class="caption-text">VAE validation: top left - original field, top centre - ERA5 source field, top right - generator output, bottom right - difference original::generator, bottom centre - difference ERA::generator bottom left - scatter plots.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>This is working pretty well - a plausible HadUK-Grid Tmax field is produced from the ERA5 Tmax field for the same day. And in this case the VAE is tool we want - it does the dataset conversion directly, we don’t need a separate optimisation step.</p>
 </div>
 
 
@@ -64,10 +87,10 @@
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="how_to.html">How to reproduce or extend this work</a></li>
@@ -94,10 +117,10 @@ Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="how_to.html" title="How to reproduce and extend this work"
+          <a href="models/conversion/get_data.html" title="ERA5 to HadUK-Grid - get the training data"
              >next</a> |</li>
         <li class="right" >
-          <a href="haduk-grid.html" title="Working with haduk-grid"
+          <a href="models/haduk-grid/optimiser.html" title="HadUK-Grid Tmax - DA by optimisation in latent space"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Dataset to dataset conversion</a></li> 

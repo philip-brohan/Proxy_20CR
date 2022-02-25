@@ -1,0 +1,491 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ERA5 to HadUK-Grid - validate the trained VAE &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Assimilating mean-sea-level pressure" href="../../mslp.html" />
+    <link rel="prev" title="ERA5 to HadUK-Grid - train the Variational AutoEncoder" href="training.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../mslp.html" title="Assimilating mean-sea-level pressure"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="ERA5 to HadUK-Grid - train the Variational AutoEncoder"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../conversion.html" accesskey="U">Dataset to dataset conversion</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ERA5 to HadUK-Grid - validate the trained VAE</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="era5-to-haduk-grid-validate-the-trained-vae">
+<h1>ERA5 to HadUK-Grid - validate the trained VAE<a class="headerlink" href="#era5-to-haduk-grid-validate-the-trained-vae" title="Permalink to this headline">¶</a></h1>
+<div class="figure align-center" id="id1" style="width: 95%">
+<a class="reference internal image-reference" href="../../_images/comparison1.jpg"><img alt="../../_images/comparison1.jpg" src="../../_images/comparison1.jpg" style="width: 95%;" /></a>
+<p class="caption"><span class="caption-text">VAE validation: top left - original field, top centre - ERA5 source field, top right - generator output, bottom right - difference original::generator, bottom centre - difference ERA::generator bottom left - scatter plots.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>Script to make the validation figure</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Plot a validation figure for the autoencoder.</span>
+
+<span class="c1"># Fir components</span>
+<span class="c1">#  1) Original field</span>
+<span class="c1">#  2) Encoded field</span>
+<span class="c1">#  3) Difference field</span>
+<span class="c1">#  4) Original:Encoded scatter</span>
+<span class="c1">#</span>
+
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_agg</span> <span class="kn">import</span> <span class="n">FigureCanvasAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span>
+<span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="kn">import</span> <span class="n">Figure</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--epoch&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Epoch&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--year&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1979</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--day&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/.&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">plot_HUKG_comparison</span> <span class="kn">import</span> <span class="n">get_land_mask</span>
+<span class="kn">from</span> <span class="nn">plot_HUKG_comparison</span> <span class="kn">import</span> <span class="n">plot_Tmax</span>
+<span class="kn">from</span> <span class="nn">plot_HUKG_comparison</span> <span class="kn">import</span> <span class="n">plot_scatter</span>
+<span class="kn">from</span> <span class="nn">plot_HUKG_comparison</span> <span class="kn">import</span> <span class="n">plot_colourbar</span>
+
+<span class="c1"># Make the HUKG tensor for the specified date</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/../../../data/prepare_training_tensors_HUKG_Tmax&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_load_tmax</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_load_tmax_climatology</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_trim</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_load_observations</span>
+
+<span class="n">ht</span> <span class="o">=</span> <span class="n">HUKG_load_tmax</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">hc</span> <span class="o">=</span> <span class="n">HUKG_load_tmax_climatology</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">ht</span> <span class="o">=</span> <span class="n">ht</span> <span class="o">-</span> <span class="n">hc</span>
+<span class="n">ht</span> <span class="o">/=</span> <span class="mi">10</span>
+<span class="n">ht</span> <span class="o">+=</span> <span class="mf">0.5</span>
+<span class="n">ht</span> <span class="o">=</span> <span class="n">HUKG_trim</span><span class="p">(</span><span class="n">ht</span><span class="p">)</span>
+<span class="n">ht</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ht</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">msk</span> <span class="o">=</span> <span class="n">ht</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mask</span> 
+<span class="n">ht_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">ht</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">ht_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ht_in</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">896</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Make the ERA5 tensor for the specified date</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/../../../data/prepare_training_tensors_ERA5_HKUG_Tmax&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">ERA5_load</span> <span class="kn">import</span> <span class="n">ERA5_load_Tmax</span>
+<span class="kn">from</span> <span class="nn">ERA5_load</span> <span class="kn">import</span> <span class="n">ERA5_load_Tmax_climatology</span>
+
+<span class="n">et</span> <span class="o">=</span> <span class="n">ERA5_load_Tmax</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">ec</span> <span class="o">=</span> <span class="n">ERA5_load_Tmax_climatology</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">et</span> <span class="o">=</span> <span class="n">et</span> <span class="o">-</span> <span class="n">ec</span>
+<span class="n">et</span> <span class="o">/=</span> <span class="mi">10</span>
+<span class="n">et</span> <span class="o">+=</span> <span class="mf">0.5</span>
+<span class="c1"># Convert it to HadUKGrid grid</span>
+<span class="n">et</span> <span class="o">=</span> <span class="n">et</span><span class="o">.</span><span class="n">regrid</span><span class="p">(</span><span class="n">ht</span><span class="p">,</span> <span class="n">iris</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">Linear</span><span class="p">())</span>
+<span class="c1"># discard bottom left to make sizes multiply divisible by 2</span>
+<span class="n">et</span> <span class="o">=</span> <span class="n">HUKG_trim</span><span class="p">(</span><span class="n">et</span><span class="p">)</span>
+<span class="n">et_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">et</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">et_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">et_in</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">896</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Set up the model and load the weights at the chosen epoch</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/..&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">autoencoderModel</span> <span class="kn">import</span> <span class="n">DCVAE</span>
+
+<span class="n">autoencoder</span> <span class="o">=</span> <span class="n">DCVAE</span><span class="p">()</span>
+<span class="n">weights_dir</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/models/DCVAE_single_ERA5_to_HUKG_Tmax/&quot;</span> <span class="o">+</span> <span class="s2">&quot;Epoch_</span><span class="si">%04d</span><span class="s2">&quot;</span>
+<span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">load_status</span> <span class="o">=</span> <span class="n">autoencoder</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ckpt&quot;</span> <span class="o">%</span> <span class="n">weights_dir</span><span class="p">)</span><span class="o">.</span><span class="n">expect_partial</span><span class="p">()</span>
+<span class="c1"># Check the load worked</span>
+<span class="n">load_status</span><span class="o">.</span><span class="n">assert_existing_objects_matched</span><span class="p">()</span>
+
+
+<span class="c1"># Make encoded version</span>
+<span class="n">encoded</span> <span class="o">=</span> <span class="n">autoencoder</span><span class="o">.</span><span class="n">predict_on_batch</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">et_in</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">896</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+<span class="n">encoded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+<span class="n">encoded</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">encoded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">encoded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">896</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Discard masked components of ERA5</span>
+<span class="n">et_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">et_in</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+<span class="n">et_in</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">et_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">et_in</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">et_in</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">et_in</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">896</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Make the figure</span>
+<span class="n">lm</span> <span class="o">=</span> <span class="n">get_land_mask</span><span class="p">()</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">(</span>
+    <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+    <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">facecolor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.88</span><span class="p">,</span> <span class="mf">0.88</span><span class="p">,</span> <span class="mf">0.88</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">edgecolor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">subplotpars</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">tight_layout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">canvas</span> <span class="o">=</span> <span class="n">FigureCanvas</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">16</span><span class="p">})</span>
+
+<span class="n">ax_global</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">)</span>
+<span class="n">ax_global</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ax_global</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">enable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax_global</span><span class="o">.</span><span class="n">fill</span><span class="p">((</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span> <span class="s2">&quot;white&quot;</span><span class="p">)</span>
+
+<span class="c1"># Top left - original field</span>
+<span class="n">ax_of</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.565</span><span class="p">,</span> <span class="mf">0.323</span><span class="p">,</span> <span class="mf">0.425</span><span class="p">])</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ofp</span> <span class="o">=</span> <span class="n">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax_of</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">ht_in</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="n">lm</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Original: </span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">year</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">ax_ocb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.0365</span><span class="p">,</span> <span class="mf">0.505</span><span class="p">,</span> <span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="n">plot_colourbar</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_ocb</span><span class="p">,</span> <span class="n">ofp</span><span class="p">)</span>
+
+<span class="c1"># Top centre - ERA5 field</span>
+<span class="n">ax_of</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.34</span><span class="p">,</span> <span class="mf">0.565</span><span class="p">,</span> <span class="mf">0.323</span><span class="p">,</span> <span class="mf">0.425</span><span class="p">])</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ofp</span> <span class="o">=</span> <span class="n">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax_of</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">et_in</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="n">lm</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ERA5&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax_ocb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.3665</span><span class="p">,</span> <span class="mf">0.505</span><span class="p">,</span> <span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="n">plot_colourbar</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_ocb</span><span class="p">,</span> <span class="n">ofp</span><span class="p">)</span>
+
+<span class="c1"># Bottom centre - ERA difference field</span>
+<span class="n">ax_of</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.34</span><span class="p">,</span> <span class="mf">0.065</span><span class="p">,</span> <span class="mf">0.323</span><span class="p">,</span> <span class="mf">0.425</span><span class="p">])</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ofp</span> <span class="o">=</span> <span class="n">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax_of</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">et_in</span> <span class="o">-</span> <span class="n">ht_in</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="n">lm</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ERA5 Difference&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax_ocb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.3665</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="n">plot_colourbar</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_ocb</span><span class="p">,</span> <span class="n">ofp</span><span class="p">)</span>
+
+<span class="c1"># Top right - encoded field</span>
+<span class="n">ax_of</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.67</span><span class="p">,</span> <span class="mf">0.565</span><span class="p">,</span> <span class="mf">0.323</span><span class="p">,</span> <span class="mf">0.425</span><span class="p">])</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ofp</span> <span class="o">=</span> <span class="n">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax_of</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">encoded</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="n">lm</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Generator&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax_ocb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.6965</span><span class="p">,</span> <span class="mf">0.505</span><span class="p">,</span> <span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="n">plot_colourbar</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_ocb</span><span class="p">,</span> <span class="n">ofp</span><span class="p">)</span>
+
+<span class="c1"># Bottom right - generated difference field</span>
+<span class="n">ax_of</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.67</span><span class="p">,</span> <span class="mf">0.065</span><span class="p">,</span> <span class="mf">0.323</span><span class="p">,</span> <span class="mf">0.425</span><span class="p">])</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+<span class="n">ax_of</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ofp</span> <span class="o">=</span> <span class="n">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax_of</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">encoded</span> <span class="o">-</span> <span class="n">ht_in</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="n">lm</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Generator Difference&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax_ocb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.6965</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.27</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="n">plot_colourbar</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_ocb</span><span class="p">,</span> <span class="n">ofp</span><span class="p">)</span>
+
+<span class="c1"># Bottom right - scatterplots</span>
+
+<span class="n">xmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">ht_in</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="n">et_in</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="n">encoded</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span>
+<span class="n">xmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">ht_in</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="n">et_in</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="n">encoded</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">*</span><span class="mi">10</span>
+<span class="n">ax_scatter</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.07</span><span class="p">,</span> <span class="mf">0.29</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">])</span>
+<span class="n">plot_scatter</span><span class="p">(</span>
+    <span class="n">ax_scatter</span><span class="p">,</span> <span class="n">ht_in</span><span class="p">,</span> <span class="n">et_in</span><span class="p">,</span> <span class="n">xlab</span><span class="o">=</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span> <span class="n">ylab</span><span class="o">=</span><span class="s2">&quot;ERA5&quot;</span><span class="p">,</span> <span class="n">d_min</span><span class="o">=</span><span class="n">xmin</span><span class="p">,</span> <span class="n">d_max</span><span class="o">=</span><span class="n">xmax</span>
+<span class="p">)</span>
+
+<span class="n">ax_scatter2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.07</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">])</span>
+<span class="n">plot_scatter</span><span class="p">(</span>
+    <span class="n">ax_scatter2</span><span class="p">,</span>
+    <span class="n">ht_in</span><span class="p">,</span>
+    <span class="n">encoded</span><span class="p">,</span>
+    <span class="n">xlab</span><span class="o">=</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span>
+    <span class="n">ylab</span><span class="o">=</span><span class="s2">&quot;Generator&quot;</span><span class="p">,</span>
+    <span class="n">d_min</span><span class="o">=</span><span class="n">xmin</span><span class="p">,</span>
+    <span class="n">d_max</span><span class="o">=</span><span class="n">xmax</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;comparison.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Utility functions used in the plot</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Functions to plot haduk-grid before and after autoencoding</span>
+<span class="c1">#  Takes data in tensorflow format (no geometry metadata, normalised)</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">cmocean</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/../../../data/prepare_training_tensors_HUKG_Tmax/&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">HUKG_load_tmax</span> <span class="kn">import</span> <span class="n">HUKG_trim</span>
+
+<span class="c1"># It&#39;s a spatial map, so want the land mask</span>
+<span class="k">def</span> <span class="nf">get_land_mask</span><span class="p">():</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/fixed_fields/land_mask/HadUKG_land_from_Copernicus.nc&quot;</span>
+        <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATADIR&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">HUKG_trim</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">plot_Tmax</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="n">tmx</span><span class="p">,</span>
+    <span class="n">vMin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">vMax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">o_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">land</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">land</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">land</span> <span class="o">=</span> <span class="n">get_land_mask</span><span class="p">()</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="n">land</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;projection_y_coordinate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="n">land</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;projection_x_coordinate&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span>
+    <span class="n">land_img</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolorfast</span><span class="p">(</span>
+        <span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">land</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;Greys&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span>
+    <span class="p">)</span>
+
+    <span class="n">pdata</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">tmx</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pdata</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">pdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">land</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pdata</span><span class="p">)</span>
+
+    <span class="n">T_img</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolorfast</span><span class="p">(</span>
+        <span class="n">lons</span><span class="p">,</span>
+        <span class="n">lats</span><span class="p">,</span>
+        <span class="n">pdata</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="o">=</span><span class="n">cmocean</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span>
+        <span class="n">vmin</span><span class="o">=</span><span class="n">vMin</span><span class="p">,</span>
+        <span class="n">vmax</span><span class="o">=</span><span class="n">vMax</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">zorder</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">obs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">obs</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="o">/</span> <span class="mi">896</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">lons</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lons</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">lons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">obs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="o">/</span> <span class="mi">1440</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">lats</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lats</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">lats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">,</span>  <span class="c1"># ((x/2).astype(int)+1)*2,</span>
+            <span class="n">y</span><span class="p">,</span>  <span class="c1"># ((y/2).astype(int)+1)*2,</span>
+            <span class="n">s</span><span class="o">=</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">o_size</span><span class="p">,</span>
+            <span class="n">c</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="n">lons</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">lons</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lons</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.03</span><span class="p">,</span>
+            <span class="n">lats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">lats</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lats</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.02</span><span class="p">,</span>
+            <span class="n">label</span><span class="p">,</span>
+            <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+            <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">facecolor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span>
+                <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                <span class="n">boxstyle</span><span class="o">=</span><span class="s2">&quot;round&quot;</span><span class="p">,</span>
+                <span class="n">pad</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+            <span class="n">clip_on</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">T_img</span>
+
+
+<span class="k">def</span> <span class="nf">plot_scatter</span><span class="p">(</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="n">t_in</span><span class="p">,</span> <span class="n">t_out</span><span class="p">,</span> <span class="n">land</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_max</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">d_min</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">xlab</span><span class="o">=</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span> <span class="n">ylab</span><span class="o">=</span><span class="s2">&quot;Encoded&quot;</span>
+<span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_in</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_out</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
+    <span class="c1">#    if land is not None:</span>
+    <span class="c1">#        ld = land.data.flatten</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+        <span class="n">cmap</span><span class="o">=</span><span class="n">cmocean</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ice_r</span><span class="p">,</span>
+        <span class="n">bins</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span>
+        <span class="n">mincnt</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span><span class="n">d_max</span><span class="p">,</span><span class="n">d_min</span><span class="p">,</span><span class="n">d_max</span><span class="p">),</span>
+        <span class="n">zorder</span><span class="o">=</span><span class="mi">50</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">add_line</span><span class="p">(</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">(</span>
+            <span class="n">xdata</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span> <span class="n">d_max</span><span class="p">),</span>
+            <span class="n">ydata</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span> <span class="n">d_max</span><span class="p">),</span>
+            <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="n">xlab</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylab</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">plot_colourbar</span><span class="p">(</span>
+    <span class="n">fig</span><span class="p">,</span>
+    <span class="n">ax</span><span class="p">,</span>
+    <span class="n">T_img</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span>
+        <span class="n">T_img</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;horizontal&quot;</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">1.0</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../mslp.html" title="Assimilating mean-sea-level pressure"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="ERA5 to HadUK-Grid - train the Variational AutoEncoder"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../conversion.html" >Dataset to dataset conversion</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ERA5 to HadUK-Grid - validate the trained VAE</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

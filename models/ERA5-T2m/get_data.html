@@ -1,0 +1,419 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ERA5 T2m - get the training data &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ERA5 T2m - convert the data into tf.Tensors" href="to_tensor.html" />
+    <link rel="prev" title="Building a generative model" href="../../model.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="ERA5 T2m - convert the data into tf.Tensors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../model.html" title="Building a generative model"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../model.html" accesskey="U">Building a generative model</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ERA5 T2m - get the training data</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="era5-t2m-get-the-training-data">
+<h1>ERA5 T2m - get the training data<a class="headerlink" href="#era5-t2m-get-the-training-data" title="Permalink to this headline">¶</a></h1>
+<p>Ideally I’d put in here a script to download the training data to use. This time, however, I cheated and used pre-prepared data provided by a colleague at the Met Office (thanks Robin). So you are on your own for this one.</p>
+<p>You can get the data I used from the <a class="reference external" href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview">Copernicus climate Data Store</a> but I don’t have a pre-prepared script for it. (Download the hourly data at 0.25 degree resolution, and average into daily means).</p>
+<p>Once you’ve got the data as a local netCDF file you are going to need to make a climatology (our VAE works on anomalies) and a variability climatology (comparing model uncertainty to expected climatological variability tells us where we have skill).</p>
+<p>Utility script for data access (imported in most other scripts using this data):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load daily T2m data from ERA5</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+
+<span class="c1"># Convert anomalies to the range 0-1 (ish) by replacing each value</span>
+<span class="c1">#  with its corresponding CDF value</span>
+<span class="k">def</span> <span class="nf">ERA5_quantile_normalise</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">quantiles</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+            <span class="nb">open</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/Quantiles/total_pctl.pkl&quot;</span>
+                <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;rb&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">wkg</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wkg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">wkg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">wkg</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">wkg</span>
+    <span class="k">for</span> <span class="n">pct</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">98</span><span class="p">):</span>
+        <span class="n">wkg</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">data</span><span class="p">[(</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;=</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wkg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">wkg</span> <span class="o">=</span> <span class="n">pct</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">wkg</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">res</span><span class="p">[(</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;=</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">pct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="n">wkg</span>
+    <span class="n">wkg</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">98</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wkg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">wkg</span> <span class="o">=</span> <span class="mi">99</span> <span class="o">+</span> <span class="p">(</span><span class="n">wkg</span> <span class="o">-</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">98</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="mi">98</span><span class="p">]</span> <span class="o">-</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">97</span><span class="p">])</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="n">quantiles</span><span class="p">[</span><span class="mi">98</span><span class="p">]]</span> <span class="o">=</span> <span class="n">wkg</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">res</span> <span class="o">/</span> <span class="mi">100</span>
+    <span class="k">return</span> <span class="n">r</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_roll_longitude</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">longitude</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">))</span>
+    <span class="n">longs</span> <span class="o">=</span> <span class="n">f1</span><span class="o">.</span><span class="n">_dim_coords_and_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">points</span> <span class="o">-</span> <span class="mi">360</span>
+    <span class="n">f1</span><span class="o">.</span><span class="n">_dim_coords_and_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">points</span> <span class="o">=</span> <span class="n">longs</span>
+    <span class="n">f2</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">longitude</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&lt;=</span> <span class="mi">180</span><span class="p">))</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">cube</span><span class="o">.</span><span class="n">CubeList</span><span class="p">([</span><span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">])</span><span class="o">.</span><span class="n">concatenate_cube</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">f</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_trim</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">1440</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">720</span><span class="p">):</span>
+    <span class="n">xmin</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;longitude&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="o">-</span><span class="n">x</span><span class="p">]</span>
+    <span class="n">cx</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">longitude</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&gt;=</span> <span class="n">xmin</span><span class="p">)</span>
+    <span class="n">ymin</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">coord</span><span class="p">(</span><span class="s2">&quot;latitude&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">cy</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span> <span class="o">&gt;=</span> <span class="n">ymin</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">cx</span> <span class="o">&amp;</span> <span class="n">cy</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_load_LS_mask</span><span class="p">():</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_SST/&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;era5_daily_0m_sea_surface_temperature_19790101to20210831.nc&quot;</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">)</span>
+    <span class="n">ddata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span>
+        <span class="n">fname</span><span class="p">,</span>
+        <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+            <span class="n">time</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">year</span> <span class="o">==</span> <span class="mi">1979</span>
+            <span class="ow">and</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">month</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">day</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">ddata</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ddata</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span>  <span class="c1"># Remove mask</span>
+    <span class="n">ddata</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ddata</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ddata</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ddata</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ddata</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_load_T2m</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;era5_daily_2m_temperature_19790101to20210831.nc&quot;</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">)</span>
+    <span class="n">ddata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span>
+        <span class="n">fname</span><span class="p">,</span>
+        <span class="n">iris</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+            <span class="n">time</span><span class="o">=</span><span class="k">lambda</span> <span class="n">cell</span><span class="p">:</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">year</span> <span class="o">==</span> <span class="n">year</span>
+            <span class="ow">and</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">month</span> <span class="o">==</span> <span class="n">month</span>
+            <span class="ow">and</span> <span class="n">cell</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">day</span> <span class="o">==</span> <span class="n">day</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ddata</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_load_T2m_climatology</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">month</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">day</span> <span class="o">==</span> <span class="mi">29</span><span class="p">:</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="mi">28</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/&quot;</span> <span class="o">+</span> <span class="s2">&quot;climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">month</span><span class="p">,</span>
+        <span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ddata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ddata</span>
+
+
+<span class="k">def</span> <span class="nf">ERA5_load_T2m_variability_climatology</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">month</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">day</span> <span class="o">==</span> <span class="mi">29</span><span class="p">:</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="mi">28</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/&quot;</span>
+        <span class="o">+</span> <span class="s2">&quot;variability_climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">month</span><span class="p">,</span>
+        <span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ddata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ddata</span>
+</pre></div>
+</div>
+<p>Scripts to make the climatology:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/..&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">ERA5_load</span> <span class="kn">import</span> <span class="n">ERA5_load_T2m</span>
+
+<span class="c1"># Going to do external parallelism - run this on one core</span>
+<span class="kn">import</span> <span class="nn">dask</span>
+
+<span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="s2">&quot;single-threaded&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--month&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Integer month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--day&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Day of month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="n">opfile</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">opfile</span><span class="p">)):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">opfile</span><span class="p">))</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">2011</span><span class="p">):</span>
+    <span class="n">yd</span> <span class="o">=</span> <span class="n">ERA5_load_T2m</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">+=</span> <span class="n">yd</span>
+<span class="n">c</span> <span class="o">/=</span> <span class="mi">30</span>
+
+<span class="n">iris</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">opfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Make a few hundred tf data files</span>
+<span class="c1">#  for training the GCM models.</span>
+
+<span class="c1"># Make an ER5 T2m climatology file for each day</span>
+
+<span class="c1"># This script does not run the commands - it makes a list of commands</span>
+<span class="c1">#  (in the file &#39;run.txt&#39;) which can be run in parallel.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="c1"># Function to check if the job is already done for this timepoint</span>
+<span class="k">def</span> <span class="nf">is_done</span><span class="p">(</span><span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="n">op_file_name</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">month</span><span class="p">,</span>
+        <span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">op_file_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;run.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span>
+
+<span class="n">start_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">end_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+
+<span class="n">current_day</span> <span class="o">=</span> <span class="n">start_day</span>
+<span class="k">while</span> <span class="n">current_day</span> <span class="o">&lt;=</span> <span class="n">end_day</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
+        <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+        <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;./make_climatology_day.py --month=</span><span class="si">%d</span><span class="s2"> --day=</span><span class="si">%d</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">current_day</span> <span class="o">=</span> <span class="n">current_day</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Scripts to make the variability climatology:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">iris.analysis.maths</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/..&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="kn">from</span> <span class="nn">ERA5_load</span> <span class="kn">import</span> <span class="n">ERA5_load_T2m</span>
+<span class="kn">from</span> <span class="nn">ERA5_load</span> <span class="kn">import</span> <span class="n">ERA5_load_T2m_climatology</span>
+
+<span class="c1"># Going to do external parallelism - run this on one core</span>
+<span class="kn">import</span> <span class="nn">dask</span>
+
+<span class="n">dask</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">scheduler</span><span class="o">=</span><span class="s2">&quot;single-threaded&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--month&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Integer month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--day&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Day of month&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="n">opfile</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/variability_climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span>
+    <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">opfile</span><span class="p">)):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">opfile</span><span class="p">))</span>
+
+<span class="n">yc</span> <span class="o">=</span> <span class="n">ERA5_load_T2m_climatology</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">2011</span><span class="p">):</span>
+    <span class="n">yd</span> <span class="o">=</span> <span class="n">ERA5_load_T2m</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+    <span class="n">yd</span> <span class="o">=</span> <span class="n">yd</span> <span class="o">-</span> <span class="n">yc</span>
+    <span class="n">yd</span> <span class="o">=</span> <span class="n">yd</span> <span class="o">*</span> <span class="n">yd</span>
+    <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">+=</span> <span class="n">yd</span>
+<span class="n">c</span> <span class="o">/=</span> <span class="mi">30</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">maths</span><span class="o">.</span><span class="n">apply_ufunc</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+<span class="n">iris</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">opfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Make an ER5 T2m variability climatology file for each day</span>
+
+<span class="c1"># This script does not run the commands - it makes a list of commands</span>
+<span class="c1">#  (in the file &#39;run.txt&#39;) which can be run in parallel.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="c1"># Function to check if the job is already done for this timepoint</span>
+<span class="k">def</span> <span class="nf">is_done</span><span class="p">(</span><span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="n">op_file_name</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/ERA5/daily_T2m/variability_climatology/</span><span class="si">%02d</span><span class="s2">/</span><span class="si">%02d</span><span class="s2">.nc&quot;</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
+        <span class="n">month</span><span class="p">,</span>
+        <span class="n">day</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">op_file_name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;run.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span>
+
+<span class="n">start_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">end_day</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1981</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+
+<span class="n">current_day</span> <span class="o">=</span> <span class="n">start_day</span>
+<span class="k">while</span> <span class="n">current_day</span> <span class="o">&lt;=</span> <span class="n">end_day</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
+        <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+        <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;./make_climatology_day.py --month=</span><span class="si">%d</span><span class="s2"> --day=</span><span class="si">%d</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">current_day</span> <span class="o">=</span> <span class="n">current_day</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="ERA5 T2m - convert the data into tf.Tensors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../model.html" title="Building a generative model"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../model.html" >Building a generative model</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ERA5 T2m - get the training data</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

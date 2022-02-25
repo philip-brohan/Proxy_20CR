@@ -14,8 +14,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Dataset to dataset conversion" href="conversion.html" />
-    <link rel="prev" title="Finding mean-sea-level pressure by assimilating wind observations" href="multi-variable.html" /> 
+    <link rel="next" title="HadUK-Grid Tmax - get the training data" href="models/haduk-grid/get_data.html" />
+    <link rel="prev" title="Data Assimilation by optimisation in latent space" href="optimiser.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,10 +24,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="conversion.html" title="Dataset to dataset conversion"
+          <a href="models/haduk-grid/get_data.html" title="HadUK-Grid Tmax - get the training data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Working with haduk-grid</a></li> 
@@ -43,14 +43,35 @@
 <h1>Working with haduk-grid<a class="headerlink" href="#working-with-haduk-grid" title="Permalink to this headline">¶</a></h1>
 <p>A weakness of this ML-reanalysis approach is that we have been using samples from a preexisting reanalysis to train the VAE. This makes the process somewhat circular - it would be more powerful if we could generate the VAE some other way.</p>
 <p>One possibility for this is to train the VAE on pure observations, and the easy place to start is with an existing observational dataset - here we are using <a class="reference external" href="https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid">HadUK-Grid</a>, specifically the daily maximum air temperature.</p>
-<div class="figure align-center" style="width: 65%">
+<p>The process is the same as <a class="reference internal" href="model.html"><span class="doc">with ERA5 global T2m data</span></a> except that the data format is slightly different, and we are only using 20 dimensions in the latent space (an arbitary decision, but there should be fewer degrees of freedom in the UK near-surface temperatures than the global ones).</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/get_data.html">Get the training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/to_tensor.html">Convert the training data to tf tensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/make_dataset.html">Package the tensors into a tf Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/VAE.html">Specify the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/training.html">Train the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/validation.html">Validate the trained VAE</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id1" style="width: 65%">
 <a class="reference internal image-reference" href="_images/comparison.jpg"><img alt="_images/comparison.jpg" src="_images/comparison.jpg" style="width: 65%;" /></a>
+<p class="caption"><span class="caption-text">VAE validation: top left - original field, top right - generator output, bottom left - difference, bottom right - scatter original::output. The point anomalies in the original, at the locations of some of the stations used, are an artefact of the simple spatial covariance model used in the dataset gridding process. That the generator does not reproduce them <cite>might</cite> be an advantage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
-<div class="figure align-center" style="width: 65%">
+<p>Assimilation is done exactly as <a class="reference internal" href="optimiser.html"><span class="doc">with ERA5 global T2m data</span></a>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id2" style="width: 65%">
 <a class="reference internal image-reference" href="_images/fit_full.jpg"><img alt="_images/fit_full.jpg" src="_images/fit_full.jpg" style="width: 65%;" /></a>
+<p class="caption"><span class="caption-text">Assimilation validation: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of the 310 stations used in making the original field.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
-<div class="figure align-center" style="width: 65%">
+<p>The DA method in this case gives a method for making a gridded field from the observations - but we already have such a method (that’s how we made the HadUK-grid fields in the first place). That does not make the DA useless, however. It provides a method for making gridded fields (with uncertainty estimates) from many fewer observations - so it will be useful for extending the gridded fields back in time.</p>
+<div class="figure align-center" id="id3" style="width: 65%">
 <a class="reference internal image-reference" href="_images/fit_decimated.jpg"><img alt="_images/fit_decimated.jpg" src="_images/fit_decimated.jpg" style="width: 65%;" /></a>
+<p class="caption"><span class="caption-text">Assimilation validation with decimated observations: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of only 31 of the stations used in making the original field (10%).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </div>
 </div>
 
@@ -72,10 +93,10 @@
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">You don't have to start from GCM output - working with haduk-grid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="how_to.html">How to reproduce or extend this work</a></li>
@@ -102,10 +123,10 @@ Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="conversion.html" title="Dataset to dataset conversion"
+          <a href="models/haduk-grid/get_data.html" title="HadUK-Grid Tmax - get the training data"
              >next</a> |</li>
         <li class="right" >
-          <a href="multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+          <a href="optimiser.html" title="Data Assimilation by optimisation in latent space"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Working with haduk-grid</a></li> 
