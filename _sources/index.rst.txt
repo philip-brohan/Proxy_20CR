@@ -45,9 +45,9 @@ We are going to replace the GCM with a generative model. Recent work in ML has g
 This picture is not a photograph, it is the output from an ML model (`StyleGAN2 <https://github.com/NVlabs/stylegan2>`_, via `this-person-does-not-exist.com <https://this-person-does-not-exist.com/en>`_). The model here is serving as a function that takes 512 numbers as an input (usually generated at random) and converts them into a photo-realistic picture. We call this function a generator - ``g()``.
 
 .. figure:: figures/g_to_tpdne.jpg
-   :width: 85%
+   :width: 80%
    :align: center
-   :figwidth: 85%
+   :figwidth: 80%
 
 The inputs ``X`` form a vector in 512-dimensional space. We call this input space the *latent space* and the model is trained to map any point in this space into a photo-realistic picture. (Strictly, any point close to the origin - the ``X`` should be a sample from a multivariate normal distribution with mean 0 and variance 1).
 
@@ -117,13 +117,6 @@ This is a gain because the latent space, unlike real space, is *complete* and *c
 
 This optimisation search provides our function ``f()`` and it is simple to extend it to provide uncertainty estimates as well. Call the function several times with different starting guesses for the latent space vector ``X`` (and, if desired, perturbations to the observations to account for their uncertainty), and the resulting ensemble of real space fields provides a sample constrained by the observations.
 
-So the recipe for ML data assimilation is:
-
-#. Train a variational autoencoder on a sample of the desired output
-#. Find a point in latent space which, when run through the resulting generator function, matches the observations.
-
-ML, and particularly the `VAE <https://en.wikipedia.org/wiki/Variational_autoencoder>`_ make this possible by providing a straightforward method for creating a generator function ``g()`` which is both expressive and fast. It would be extraordinarily difficult to code such a function by traditional methods.
-
 .. figure:: figures/DCVAE_to_optimiser_to_DA.jpg
    :width: 95%
    :align: center
@@ -138,6 +131,9 @@ To check that it works, we can make some pseudo-observations from a known field,
 
    Assimilation validation: bottom - original field (ERA5 T2m anomaly), top - assimilation results. Black dots mark observations assimilated, grey hatching marks regions where the result is very uncertain. 
 
+This process works as expected. We can reconstruct the weather field precisely in regions where we have observations, and with uncertainty in regions where observations are unavailable.
+
+It's not just T2m - the same approach can be used over a wide range of applications.
 
 Examples of use
 ---------------
@@ -150,6 +146,18 @@ Examples of use
    Assimilating things other than observations - dataset to dataset conversion <conversion>
    Not just T2m - assimilating mslp <mslp>
    Not just one variable - finding mslp by assimilating wind observations <multi-variable>
+
+
+Conclusions
+-----------
+
+Machine Learning makes data assimilation easy, cheap, and fast. The recipe is:
+
+#. Train a variational autoencoder on a sample of the desired output
+#. Find a point in latent space which, when run through the resulting generator function, matches the observations.
+
+This is made possible by the new capabilities offered by ML, and particularly the `VAE <https://en.wikipedia.org/wiki/Variational_autoencoder>`_ which provides a straightforward method for creating a latent space, and a generator function ``g()``, which is both expressive and fast. It would be extraordinarily difficult to code such a function by traditional methods.
+
 
 Small print
 -----------

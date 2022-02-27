@@ -43,7 +43,14 @@
 </div>
 <p>All blame should go to the maintainer; credit is more widely distributed:</p>
 <ul class="simple">
-<li><p>This document was written by <a class="reference external" href="https://brohan.org">Philip Brohan</a> (Met Office). He was funded by the <a class="reference external" href="https://www.metoffice.gov.uk/research/approach/collaboration/newton/cssp-china/index">Climate Science for Services Program - China</a>.</p></li>
+<li><p>This document was written by <a class="reference external" href="https://brohan.org">Philip Brohan</a> (Met Office). He was supported by the Met Office Hadley Centre Climate Programme funded by BEIS and Defra, and by the UK-China Research &amp; Innovation Partnership Fund through the Met Office Climate Science for Service Partnership (CSSP) China as part of the Newton Fund.</p></li>
+<li><p>This work follows on from <a class="reference external" href="https://brohan.org/ML_GCM/">previous work on weather modelling with ML</a>.</p></li>
+<li><p>The <a class="reference external" href="https://www.tensorflow.org/">TensorFlow</a> library is used throughout.</p></li>
+<li><p>Training data used came from the <a class="reference external" href="https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5">ERA5 reanalysis</a> the <a class="reference external" href="https://www.esrl.noaa.gov/psd/data/20thC_Rean/">20th Century Reanalysis (version 2c)</a> and <a class="reference external" href="https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid">HadUK-Grid</a>.</p></li>
+<li><p>This work used the Isambard UK National Tier-2 HPC Service operated by GW4 and the UK Met Office, and funded by EPSRC (EP/P020224/1). This turned out to be overkill - all these models can be trained and run on a modern laptop - they don’t need a GPU, but Isambard did provide a valuable speed-up.</p></li>
+<li><p>The calculations here make extensive use of <a class="reference external" href="https://www.gnu.org/software/parallel/">GNU Parallel</a> (<a class="reference external" href="https://www.usenix.org/publications/login/february-2011-volume-36-number-1/gnu-parallel-command-line-power-tool">Tange 2011</a>).</p></li>
+<li><p>This software is written in <a class="reference external" href="https://www.python.org/">python</a>, in an environment configured with <a class="reference external" href="https://docs.conda.io/en/latest/">conda</a>.</p></li>
+<li><p>The code and documentation use <a class="reference external" href="https://git-scm.com/">git</a> and <a class="reference external" href="https://github.com/">GitHub</a>. The documentation is written with <a class="reference external" href="https://www.sphinx-doc.org/en/master/index.html">sphinx</a>.</p></li>
 </ul>
 <p>Note that appearance on this list does not mean that the person or organisation named endorses this work, agrees with any of it, or even knows of its existence.</p>
 </div>
@@ -66,10 +73,10 @@
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="how_to.html">How to reproduce or extend this work</a></li>

@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pressure from wind - get the training data &#8212; Machine Learning for Data Assimilation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Pressure from wind - convert the data into tf.Tensors" href="to_tensor.html" />
+    <link rel="prev" title="Finding mean-sea-level pressure by assimilating wind observations" href="../../multi-variable.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="Pressure from wind - convert the data into tf.Tensors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../multi-variable.html" accesskey="U">Finding mean-sea-level pressure by assimilating wind observations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pressure from wind - get the training data</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pressure-from-wind-get-the-training-data">
+<h1>Pressure from wind - get the training data<a class="headerlink" href="#pressure-from-wind-get-the-training-data" title="Permalink to this headline">¶</a></h1>
+<p>Script to download the mslp, wind, and observations from 20CRv2c:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># We&#39;re going to work with 20CR2c fields.</span>
+<span class="c1"># Retrieve the netCDF files from NERSC and store on $SCRATCH</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">IRData.twcr</span> <span class="k">as</span> <span class="nn">twcr</span>
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1903</span><span class="p">,</span> <span class="mi">1916</span><span class="p">]:</span>
+    <span class="c1"># 2c is in 1 year batches so month and day don&#39;t matter</span>
+    <span class="n">dte</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;prmsl&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;air.2m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;tsfc&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;uwnd.10m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;vwnd.10m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;prate&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;observations&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1969</span><span class="p">,</span> <span class="mi">2010</span><span class="p">):</span>
+    <span class="c1"># 2c is in 1 year batches so month and day don&#39;t matter</span>
+    <span class="n">dte</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;prmsl&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;air.2m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;tsfc&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;uwnd.10m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;vwnd.10m&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;prate&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;observations&quot;</span><span class="p">,</span> <span class="n">dte</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;2c&quot;</span><span class="p">)</span>
+
+<span class="c1"># Also need one year of insolation data</span>
+<span class="c1"># I&#39;d like TOA incoming shortwave, but clear sky at surface</span>
+<span class="c1">#  is close enough.</span>
+<span class="c1"># This is only available as ensemble means</span>
+<span class="n">srce</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2c/&quot;</span>
+    <span class="o">+</span> <span class="s2">&quot;gaussian/monolevel/cduvb.1969.nc&quot;</span>
+<span class="p">)</span>
+<span class="n">dst</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/20CR/version_2c/ensmean/cduvb.1969.nc&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">))</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">srce</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/reconstructed.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Details: Building and training the VAE</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../haduk-grid.html">You don't have to start from GCM output - working with haduk-grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">Assimilating things other than observations - dataset to dataset conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mslp.html">Not just T2m - assimilating mslp</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../how_to.html">How to reproduce or extend this work</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Authors and acknowledgements</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/Proxy_20CR">Get a copy</a></h3>
+
+<ul>
+<li><a href="https://github.com/philip-brohan/Proxy_20CR"
+           rel="nofollow">Github repository</a></li>
+</ul>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an issue</a>.
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="to_tensor.html" title="Pressure from wind - convert the data into tf.Tensors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../multi-variable.html" title="Finding mean-sea-level pressure by assimilating wind observations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML for DA</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../multi-variable.html" >Finding mean-sea-level pressure by assimilating wind observations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pressure from wind - get the training data</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

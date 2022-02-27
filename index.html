@@ -63,8 +63,8 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 <a class="reference internal image-reference" href="_images/Person_that_does_not_exist.jpg"><img alt="_images/Person_that_does_not_exist.jpg" src="_images/Person_that_does_not_exist.jpg" style="width: 60%;" /></a>
 </div>
 <p>This picture is not a photograph, it is the output from an ML model (<a class="reference external" href="https://github.com/NVlabs/stylegan2">StyleGAN2</a>, via <a class="reference external" href="https://this-person-does-not-exist.com/en">this-person-does-not-exist.com</a>). The model here is serving as a function that takes 512 numbers as an input (usually generated at random) and converts them into a photo-realistic picture. We call this function a generator - <code class="docutils literal notranslate"><span class="pre">g()</span></code>.</p>
-<div class="figure align-center" style="width: 85%">
-<a class="reference internal image-reference" href="_images/g_to_tpdne.jpg"><img alt="_images/g_to_tpdne.jpg" src="_images/g_to_tpdne.jpg" style="width: 85%;" /></a>
+<div class="figure align-center" style="width: 80%">
+<a class="reference internal image-reference" href="_images/g_to_tpdne.jpg"><img alt="_images/g_to_tpdne.jpg" src="_images/g_to_tpdne.jpg" style="width: 80%;" /></a>
 </div>
 <p>The inputs <code class="docutils literal notranslate"><span class="pre">X</span></code> form a vector in 512-dimensional space. We call this input space the <em>latent space</em> and the model is trained to map any point in this space into a photo-realistic picture. (Strictly, any point close to the origin - the <code class="docutils literal notranslate"><span class="pre">X</span></code> should be a sample from a multivariate normal distribution with mean 0 and variance 1).</p>
 <p>If we can do this for photos of faces, then we can do it for weather fields (ERA5 T2m anomaly). The temperature field is much simpler than the face picture, so I’m reducing the latent space dimension to 100 (arbitrary, makes training easier and faster), but otherwise we can build the same generator function for that.</p>
@@ -106,12 +106,6 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 </ul>
 </div>
 <p>This optimisation search provides our function <code class="docutils literal notranslate"><span class="pre">f()</span></code> and it is simple to extend it to provide uncertainty estimates as well. Call the function several times with different starting guesses for the latent space vector <code class="docutils literal notranslate"><span class="pre">X</span></code> (and, if desired, perturbations to the observations to account for their uncertainty), and the resulting ensemble of real space fields provides a sample constrained by the observations.</p>
-<p>So the recipe for ML data assimilation is:</p>
-<ol class="arabic simple">
-<li><p>Train a variational autoencoder on a sample of the desired output</p></li>
-<li><p>Find a point in latent space which, when run through the resulting generator function, matches the observations.</p></li>
-</ol>
-<p>ML, and particularly the <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">VAE</a> make this possible by providing a straightforward method for creating a generator function <code class="docutils literal notranslate"><span class="pre">g()</span></code> which is both expressive and fast. It would be extraordinarily difficult to code such a function by traditional methods.</p>
 <div class="figure align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/DCVAE_to_optimiser_to_DA.jpg"><img alt="_images/DCVAE_to_optimiser_to_DA.jpg" src="_images/DCVAE_to_optimiser_to_DA.jpg" style="width: 95%;" /></a>
 </div>
@@ -120,6 +114,8 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 <a class="reference internal image-reference" href="_images/fit_1969.jpg"><img alt="_images/fit_1969.jpg" src="_images/fit_1969.jpg" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Assimilation validation: bottom - original field (ERA5 T2m anomaly), top - assimilation results. Black dots mark observations assimilated, grey hatching marks regions where the result is very uncertain.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </div>
+<p>This process works as expected. We can reconstruct the weather field precisely in regions where we have observations, and with uncertainty in regions where observations are unavailable.</p>
+<p>It’s not just T2m - the same approach can be used over a wide range of applications.</p>
 </div>
 <div class="section" id="examples-of-use">
 <h2>Examples of use<a class="headerlink" href="#examples-of-use" title="Permalink to this headline">¶</a></h2>
@@ -131,6 +127,15 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 <li class="toctree-l1"><a class="reference internal" href="multi-variable.html">Not just one variable - finding mslp by assimilating wind observations</a></li>
 </ul>
 </div>
+</div>
+<div class="section" id="conclusions">
+<h2>Conclusions<a class="headerlink" href="#conclusions" title="Permalink to this headline">¶</a></h2>
+<p>Machine Learning makes data assimilation easy, cheap, and fast. The recipe is:</p>
+<ol class="arabic simple">
+<li><p>Train a variational autoencoder on a sample of the desired output</p></li>
+<li><p>Find a point in latent space which, when run through the resulting generator function, matches the observations.</p></li>
+</ol>
+<p>This is made possible by the new capabilities offered by ML, and particularly the <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">VAE</a> which provides a straightforward method for creating a latent space, and a generator function <code class="docutils literal notranslate"><span class="pre">g()</span></code>, which is both expressive and fast. It would be extraordinarily difficult to code such a function by traditional methods.</p>
 </div>
 <div class="section" id="small-print">
 <h2>Small print<a class="headerlink" href="#small-print" title="Permalink to this headline">¶</a></h2>

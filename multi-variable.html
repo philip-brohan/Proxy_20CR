@@ -14,8 +14,8 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="How to reproduce and extend this work" href="how_to.html" />
-    <link rel="prev" title="Assimilating mean-sea-level pressure" href="mslp.html" /> 
+    <link rel="next" title="Pressure from wind - get the training data" href="models/multi-variable/get_data.html" />
+    <link rel="prev" title="Mean-sea-level pressure - DA by optimisation in latent space" href="models/mslp/optimiser.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -24,10 +24,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="how_to.html" title="How to reproduce and extend this work"
+          <a href="models/multi-variable/get_data.html" title="Pressure from wind - get the training data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="mslp.html" title="Assimilating mean-sea-level pressure"
+          <a href="models/mslp/optimiser.html" title="Mean-sea-level pressure - DA by optimisation in latent space"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Finding mean-sea-level pressure by assimilating wind observations</a></li> 
@@ -41,12 +41,33 @@
             
   <div class="section" id="finding-mean-sea-level-pressure-by-assimilating-wind-observations">
 <h1>Finding mean-sea-level pressure by assimilating wind observations<a class="headerlink" href="#finding-mean-sea-level-pressure-by-assimilating-wind-observations" title="Permalink to this headline">¶</a></h1>
-<div class="figure align-center" style="width: 95%">
+<p>What if we don’t have observations of the variable we want? We ought to be able to generate fields of several variables from one location in latent space - one latent space location corresponds to the total weather state at one point in time. So we should be able to constrain the latent space with one variable, and then make the associated field of some other variable by using the appropriate generator. We’re going to try this with pressure and wind, again using data from the <a class="reference external" href="https://psl.noaa.gov/data/gridded/data.20thC_ReanV2c.html">20th Century Reanalysis version 2c</a>. We are going to reconstruct a mslp field using only wind observations.</p>
+<p>The process is the same as <a class="reference internal" href="mslp.html"><span class="doc">with just mslp</span></a> except that the VAE will take a set of three fields (mslp, u-wind at 10m, and v-wind at 10m). So we will have a single point in latent space (this time with 150 dimensions), but a generator that makes three fields from that point.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/get_data.html">Get the training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/to_tensor.html">Convert the training data to tf tensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/make_dataset.html">Package the tensors into a tf Dataset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/VAE.html">Specify the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/training.html">Train the VAE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/validation.html">Validate the trained VAE</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id1" style="width: 95%">
 <a class="reference internal image-reference" href="_images/comparison3.jpg"><img alt="_images/comparison3.jpg" src="_images/comparison3.jpg" style="width: 95%;" /></a>
+<p class="caption"><span class="caption-text">VAE validation: Red contours are from the input dataset, blue contours show generator output. The three rows are the variables: mslp - top, u10m - middle, v10m - bottom. The left hand column shows comparisons of a case from the training dataset, the middle column a case from the test dataset, and the right hand column an example of generator output.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
-<div class="figure align-center" style="width: 85%">
+<p>Assimilation is done exactly as <a class="reference internal" href="mslp.html"><span class="doc">with mslp</span></a>, except we are assimilating u10m and v10m observations instead of pressure observations. We find the point in latent space that minimises the error in the wind obs. Then we use the generator to make the mslp field from that latent space location.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/multi-variable/optimiser.html">Details: DA by optimisation in latent space</a></li>
+</ul>
+</div>
+<div class="figure align-center" id="id2" style="width: 85%">
 <a class="reference internal image-reference" href="_images/fit_U+V.jpg"><img alt="_images/fit_U+V.jpg" src="_images/fit_U+V.jpg" style="width: 85%;" /></a>
+<p class="caption"><span class="caption-text">Assimilation validation - fields of mslp: Red contours are from the input dataset, blue contours show generator output - for each of 25 samples with a different starting point in latent space. Black dots mark the locations of (wind) observations assimilated.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
+<p>This works exactly as hoped - assimilating wind observations allow us to reconstruct the mslp field, where we have many observations the reconstruction is precise, where we have few observations it is very uncertain.</p>
 </div>
 
 
@@ -97,10 +118,10 @@ Please <a href="https://github.com/philip-brohan/Proxy_20CR/issues/new">raise an
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="how_to.html" title="How to reproduce and extend this work"
+          <a href="models/multi-variable/get_data.html" title="Pressure from wind - get the training data"
              >next</a> |</li>
         <li class="right" >
-          <a href="mslp.html" title="Assimilating mean-sea-level pressure"
+          <a href="models/mslp/optimiser.html" title="Mean-sea-level pressure - DA by optimisation in latent space"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">ML for DA</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Finding mean-sea-level pressure by assimilating wind observations</a></li> 
