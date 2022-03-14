@@ -7,7 +7,7 @@ This document is currently maintained by `Philip Brohan <https://brohan.org>`_ (
 
 All blame should go to the maintainer; credit is more widely distributed:
 
-* This document was written by `Philip Brohan  <https://brohan.org>`_ (Met Office). He was supported by the Met Office Hadley Centre Climate Programme funded by BEIS and Defra, and by the UK-China Research & Innovation Partnership Fund through the Met Office Climate Science for Service Partnership (CSSP) China as part of the Newton Fund.
+* This document was written by `Philip Brohan  <https://brohan.org>`_ (Met Office). He was supported by the Met Office Hadley Centre Climate Programme funded by BEIS, and by the UK-China Research & Innovation Partnership Fund through the Met Office Climate Science for Service Partnership (CSSP) China as part of the Newton Fund.
   
 * This work follows on from `previous work on weather modelling with ML <https://brohan.org/ML_GCM/>`_.
  
