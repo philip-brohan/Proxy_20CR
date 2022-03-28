@@ -23,4 +23,6 @@ All blame should go to the maintainer; credit is more widely distributed:
 
 * The code and documentation use `git <https://git-scm.com/>`_ and `GitHub <https://github.com/>`_. The documentation is written with `sphinx <https://www.sphinx-doc.org/en/master/index.html>`_.
 
+* The Bayesian description of DA is largely based on a presentation by `John Eyre <https://www.metoffice.gov.uk/research/people/john-eyre>`_
+
 Note that appearance on this list does not mean that the person or organisation named endorses this work, agrees with any of it, or even knows of its existence.
