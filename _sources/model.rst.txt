@@ -1,6 +1,17 @@
 Building a generative model
 ===========================
 
+We will use a `Variational AutoEncoder (VAE) <https://en.wikipedia.org/wiki/Variational_autoencoder>`_ as a generator factory. The VAE is based on an example in the `Tensorflow documentation <https://www.tensorflow.org/tutorials/generative/cvae>`_, kept simple, for speed: the generator and encoder are 5-layer convolutional neural nets.
+
+.. figure:: figures/DCVAE_structure.jpg
+   :width: 95%
+   :align: center
+   :figwidth: 95%
+
+   The structure of the VAE used to train the generator
+
+We train the VAE on 40-years of daily temperature anomalies from `ERA5 <https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5>`_.
+
 
 .. toctree::
    :titlesonly:

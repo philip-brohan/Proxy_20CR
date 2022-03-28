@@ -41,6 +41,12 @@
             
   <div class="section" id="building-a-generative-model">
 <h1>Building a generative model<a class="headerlink" href="#building-a-generative-model" title="Permalink to this headline">¶</a></h1>
+<p>We will use a <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">Variational AutoEncoder (VAE)</a> as a generator factory. The VAE is based on an example in the <a class="reference external" href="https://www.tensorflow.org/tutorials/generative/cvae">Tensorflow documentation</a>, kept simple, for speed: the generator and encoder are 5-layer convolutional neural nets.</p>
+<div class="figure align-center" id="id1" style="width: 95%">
+<a class="reference internal image-reference" href="_images/DCVAE_structure.jpg"><img alt="_images/DCVAE_structure.jpg" src="_images/DCVAE_structure.jpg" style="width: 95%;" /></a>
+<p class="caption"><span class="caption-text">The structure of the VAE used to train the generator</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>We train the VAE on 40-years of daily temperature anomalies from <a class="reference external" href="https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5">ERA5</a>.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="models/ERA5-T2m/get_data.html">Get the training data</a></li>
