@@ -153,7 +153,8 @@ def plot_T2m(
     return T_img
 
 
-def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5):
+def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5,
+                 xlab='Original',ylab='Generated',lw=0.5):
     x = (t_in.flatten() - 0.5) * 10
     y = (t_out.flatten() - 0.5) * 10
     #    if land is not None:
@@ -166,18 +167,19 @@ def plot_scatter(ax, t_in, t_out, land=None, d_max=5, d_min=-5):
         cmap=cmocean.cm.ice_r,
         bins="log",
         mincnt=1,
+        extent=(d_min,d_max,d_min,d_max),
     )
     ax.add_line(
         matplotlib.lines.Line2D(
             xdata=(d_min, d_max),
             ydata=(d_min, d_max),
             linestyle="solid",
-            linewidth=0.5,
+            linewidth=lw,
             color=(0.5, 0.5, 0.5, 1),
             zorder=100,
         )
     )
-    ax.set(xlabel="Original", ylabel="Encoded")
+    ax.set(xlabel=xlab, ylabel=ylab)
     ax.grid(color="black", alpha=0.2, linestyle="-", linewidth=0.5)
 
 
