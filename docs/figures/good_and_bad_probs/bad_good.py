@@ -47,12 +47,8 @@ a.coord("latitude").coord_system = cs
 a.coord("longitude").coord_system = cs
 bg = to_analysis_grid(a)
 bg.data = np.random.random(bg.data.shape) * 10 - 5
-bg = bg.regrid(a, iris.analysis.Linear())
-bg.data[mask.data == 1] *= 2
 a_in = tf.convert_to_tensor(a.data, np.float32)
 a_in = tf.reshape(a_in, [1, 720, 1440, 1])
-bg_in = tf.convert_to_tensor(bg.data, np.float32)
-bg_in = tf.reshape(bg_in, [1, 720, 1440, 1])
 
 # Get the ob locations at the given time from 20CRv3
 dte = datetime.datetime(obs_year, obs_month, obs_day, 12)
@@ -71,10 +67,23 @@ exact = tf.squeeze(interpolate_bilinear(a_in, t_obs, indexing="ij"))
 t_obs = tf.boolean_mask(t_obs, ~tf.math.is_nan(exact), axis=1)
 exact = tf.boolean_mask(exact, ~tf.math.is_nan(exact), axis=0)
 approx = exact + tf.random.normal(
-    shape=exact.shape, mean=0.0, stddev=2.0 / 15, dtype=tf.float32
+    shape=exact.shape, mean=0.0, stddev=20.0 / 15, dtype=tf.float32
 )
+# Modify bg to match the obs, where present
+lat_i = t_obs[0, :, 0].numpy() * 80 / 720
+lon_i = t_obs[0, :, 1].numpy() * 160 / 1440
+for i in range(len(exact)):
+    latidx = 80 - int(lat_i[i])
+    lonidx = int(lon_i[i]) - 1
+    bg.data[latidx, lonidx] = exact[i]
+bg = bg.regrid(a, iris.analysis.Linear())
+bg.data[mask.data == 1] *= 1.1
+bg_in = tf.convert_to_tensor(bg.data, np.float32)
+bg_in = tf.reshape(bg_in, [1, 720, 1440, 1])
+
 target = tf.squeeze(interpolate_bilinear(bg_in, t_obs, indexing="ij"))
 target = tf.boolean_mask(target, ~tf.math.is_nan(exact), axis=0)
+target = exact
 
 sys.path.append(
     "%s/../../../models/DCVAE_single_ERA5_T2m/validation" % os.path.dirname(__file__)
@@ -126,4 +135,4 @@ plot_scatter(
 )
 
 
-fig.savefig("bad_bad.png")
+fig.savefig("bad_good.png")

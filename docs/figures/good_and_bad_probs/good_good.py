@@ -45,10 +45,7 @@ a = ERA5_trim(a)
 cs = iris.coord_systems.RotatedGeogCS(90.0, 180.0, 0.0)
 a.coord("latitude").coord_system = cs
 a.coord("longitude").coord_system = cs
-bg = to_analysis_grid(a)
-bg.data = np.random.random(bg.data.shape) * 10 - 5
-bg = bg.regrid(a, iris.analysis.Linear())
-bg.data[mask.data == 1] *= 2
+bg = a.copy()
 a_in = tf.convert_to_tensor(a.data, np.float32)
 a_in = tf.reshape(a_in, [1, 720, 1440, 1])
 bg_in = tf.convert_to_tensor(bg.data, np.float32)
@@ -71,7 +68,7 @@ exact = tf.squeeze(interpolate_bilinear(a_in, t_obs, indexing="ij"))
 t_obs = tf.boolean_mask(t_obs, ~tf.math.is_nan(exact), axis=1)
 exact = tf.boolean_mask(exact, ~tf.math.is_nan(exact), axis=0)
 approx = exact + tf.random.normal(
-    shape=exact.shape, mean=0.0, stddev=2.0 / 15, dtype=tf.float32
+    shape=exact.shape, mean=0.0, stddev=20.0 / 15, dtype=tf.float32
 )
 target = tf.squeeze(interpolate_bilinear(bg_in, t_obs, indexing="ij"))
 target = tf.boolean_mask(target, ~tf.math.is_nan(exact), axis=0)
@@ -126,4 +123,4 @@ plot_scatter(
 )
 
 
-fig.savefig("bad_bad.png")
+fig.savefig("good_good.png")
