@@ -348,7 +348,8 @@
     <span class="k">return</span> <span class="n">T_img</span>
 
 
-<span class="k">def</span> <span class="nf">plot_scatter</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">t_in</span><span class="p">,</span> <span class="n">t_out</span><span class="p">,</span> <span class="n">land</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_max</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">d_min</span><span class="o">=-</span><span class="mi">5</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">plot_scatter</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">t_in</span><span class="p">,</span> <span class="n">t_out</span><span class="p">,</span> <span class="n">land</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_max</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">d_min</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span>
+                 <span class="n">xlab</span><span class="o">=</span><span class="s1">&#39;Original&#39;</span><span class="p">,</span><span class="n">ylab</span><span class="o">=</span><span class="s1">&#39;Generated&#39;</span><span class="p">,</span><span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
     <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_in</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
     <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_out</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
     <span class="c1">#    if land is not None:</span>
@@ -361,18 +362,19 @@
         <span class="n">cmap</span><span class="o">=</span><span class="n">cmocean</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">ice_r</span><span class="p">,</span>
         <span class="n">bins</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span>
         <span class="n">mincnt</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span><span class="n">d_max</span><span class="p">,</span><span class="n">d_min</span><span class="p">,</span><span class="n">d_max</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">add_line</span><span class="p">(</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">(</span>
             <span class="n">xdata</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span> <span class="n">d_max</span><span class="p">),</span>
             <span class="n">ydata</span><span class="o">=</span><span class="p">(</span><span class="n">d_min</span><span class="p">,</span> <span class="n">d_max</span><span class="p">),</span>
             <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span>
-            <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span>
             <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">zorder</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;Encoded&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="n">xlab</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylab</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
 
