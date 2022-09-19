@@ -17,13 +17,7 @@ import datetime
 def is_done(year, month, day, group):
     op_file_name = (
         ("%s/Proxy_20CR/datasets/haduk-grid/daily_maxtemp/" + "%s/%04d-%02d-%02d.tfd")
-    ) % (
-        os.getenv("SCRATCH"),
-        group,
-        year,
-        month,
-        day,
-    )
+    ) % (os.getenv("SCRATCH"), group, year, month, day,)
     if os.path.isfile(op_file_name):
         return True
     return False
@@ -38,34 +32,18 @@ current_day = start_day
 count = 1
 while current_day <= end_day:
     if count % 10 == 0:
-        if not is_done(
-            current_day.year,
-            current_day.month,
-            current_day.day,
-            "test",
-        ):
+        if not is_done(current_day.year, current_day.month, current_day.day, "test",):
             cmd = (
                 "./make_training_tensor.py --year=%d --month=%d" + " --day=%d --test \n"
-            ) % (
-                current_day.year,
-                current_day.month,
-                current_day.day,
-            )
+            ) % (current_day.year, current_day.month, current_day.day,)
             f.write(cmd)
     else:
         if not is_done(
-            current_day.year,
-            current_day.month,
-            current_day.day,
-            "training",
+            current_day.year, current_day.month, current_day.day, "training",
         ):
             cmd = (
                 "./make_training_tensor.py --year=%d --month=%d" + " --day=%d \n"
-            ) % (
-                current_day.year,
-                current_day.month,
-                current_day.day,
-            )
+            ) % (current_day.year, current_day.month, current_day.day,)
             f.write(cmd)
     current_day = current_day + datetime.timedelta(days=1)
     count += 1

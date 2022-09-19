@@ -30,6 +30,7 @@ def HUKG_load_tmax(year, month, day):
     hdata = iris.load_cube("%s/%s" % (dirname, filename))
     return hdata
 
+
 def HUKG_load_observations(year, month, day):
     if year > 2018:
         dirname = (
@@ -43,9 +44,11 @@ def HUKG_load_observations(year, month, day):
         ) % (os.getenv("SCRATCH"), year, month)
     filename = "%02d.nc" % day
     nc = netCDF4.Dataset("%s/%s" % (dirname, filename))
-    return {'projection_x_coordinate':nc.variables['projection_x_coordinate'][:].data,
-            'projection_y_coordinate':nc.variables['projection_y_coordinate'][:].data,
-            'Tmax':nc.variables['daily_maxtemp'][:].data}
+    return {
+        "projection_x_coordinate": nc.variables["projection_x_coordinate"][:].data,
+        "projection_y_coordinate": nc.variables["projection_y_coordinate"][:].data,
+        "Tmax": nc.variables["daily_maxtemp"][:].data,
+    }
 
 
 # Get an approximate daily climatology from the HadUKGrid monthlies

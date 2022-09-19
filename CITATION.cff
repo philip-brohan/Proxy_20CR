@@ -1,0 +1,38 @@
+abstract: "Reanalysis is awesome, but it’s very slow and very expensive. We can make it dramatically easier and cheaper with Machine Learning."
+authors:
+  - family-names: Brohan
+    given-names: Philip
+cff-version: 1.2.0
+date-released: "2022-04-01"
+identifiers:
+  - description: "Initial released version"
+    type: url
+    value: https://github.com/philip-brohan/Proxy_20CR/releases/tag/v1.0.0
+  - description: "Documentation"
+    type: url
+    value: http://brohan.org/Proxy_20CR/
+keywords:
+  - "weather"
+  - "climate"
+  ' "reanalysis"
+  - "Machine Learning"
+  - "Data Assimilation
+license: BSD-3-Clause
+message: "If you use this software, please cite it using these metadata."
+repository-code: "https://github.com/citation-file-format/my-research-software"
+title: "Machine Learning for Data Asimilation"
+version: 1.0.0
+repository-code: "https://github.com/philip-brohan/Proxy_20CR"
+references:
+  - title: Tensorflow
+    url: https://www.tensorflow.org/
+  - title: Iris
+    url: https://scitools-iris.readthedocs.io/en/latest/
+  - title: ERA5
+    url: https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5
+  - title: 20CR
+    url: https://www.esrl.noaa.gov/psd/data/20thC_Rean/
+  - title: HadUK-Grid
+    url: https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid
+  - title: GNU Parallel
+    url: https://www.gnu.org/software/parallel/
