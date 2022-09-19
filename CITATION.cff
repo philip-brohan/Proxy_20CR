@@ -16,9 +16,8 @@ keywords:
   - "climate"
   ' "reanalysis"
   - "Machine Learning"
-  - "Data Assimilation
+  - "Data Assimilation"
 license: BSD-3-Clause
-message: "If you use this software, please cite it using these metadata."
 repository-code: "https://github.com/citation-file-format/my-research-software"
 title: "Machine Learning for Data Asimilation"
 version: 1.0.0
