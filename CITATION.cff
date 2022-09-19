@@ -14,7 +14,7 @@ identifiers:
 keywords:
   - "weather"
   - "climate"
-  ' "reanalysis"
+  - "reanalysis"
   - "Machine Learning"
   - "Data Assimilation"
 license: BSD-3-Clause
