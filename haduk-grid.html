@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Working with haduk-grid &#8212; Machine Learning for Data Assimilation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
@@ -39,7 +40,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="working-with-haduk-grid">
+  <section id="working-with-haduk-grid">
 <h1>Working with haduk-grid<a class="headerlink" href="#working-with-haduk-grid" title="Permalink to this headline">¶</a></h1>
 <p>A weakness of this ML-reanalysis approach is that we have been using samples from a preexisting reanalysis to train the VAE. This makes the process somewhat circular - it would be more powerful if we could generate the VAE some other way.</p>
 <p>One possibility for this is to train the VAE on pure observations, and the easy place to start is with an existing observational dataset - here we are using <a class="reference external" href="https://www.metoffice.gov.uk/research/climate/maps-and-data/data/haduk-grid/haduk-grid">HadUK-Grid</a>, specifically the daily maximum air temperature.</p>
@@ -54,26 +55,32 @@
 <li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/validation.html">Validate the trained VAE</a></li>
 </ul>
 </div>
-<div class="figure align-center" id="id1" style="width: 65%">
+<figure class="align-center" id="id1" style="width: 65%">
 <a class="reference internal image-reference" href="_images/comparison1.jpg"><img alt="_images/comparison1.jpg" src="_images/comparison1.jpg" style="width: 65%;" /></a>
-<p class="caption"><span class="caption-text">VAE validation: top left - original field, top right - generator output, bottom left - difference, bottom right - scatter original::output. The point anomalies in the original, at the locations of some of the stations used, are an artefact of the simple spatial covariance model used in the dataset gridding process. That the generator does not reproduce them <cite>might</cite> be an advantage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-text">VAE validation: top left - original field, top right - generator output, bottom left - difference, bottom right - scatter original::output. The point anomalies in the original, at the locations of some of the stations used, are an artefact of the simple spatial covariance model used in the dataset gridding process. That the generator does not reproduce them <cite>might</cite> be an advantage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>Assimilation is done exactly as <a class="reference internal" href="optimiser.html"><span class="doc">with ERA5 global T2m data</span></a>.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="models/haduk-grid/optimiser.html">Details: DA by optimisation in latent space</a></li>
 </ul>
 </div>
-<div class="figure align-center" id="id2" style="width: 65%">
+<figure class="align-center" id="id2" style="width: 65%">
 <a class="reference internal image-reference" href="_images/fit_full.jpg"><img alt="_images/fit_full.jpg" src="_images/fit_full.jpg" style="width: 65%;" /></a>
-<p class="caption"><span class="caption-text">Assimilation validation: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of the 310 stations used in making the original field.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-text">Assimilation validation: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of the 310 stations used in making the original field.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>The DA method in this case gives a method for making a gridded field from the observations - but we already have such a method (that’s how we made the HadUK-grid fields in the first place). That does not make the DA useless, however. It provides a method for making gridded fields (with uncertainty estimates) from many fewer observations - so it will be useful for extending the gridded fields back in time.</p>
-<div class="figure align-center" id="id3" style="width: 65%">
+<figure class="align-center" id="id3" style="width: 65%">
 <a class="reference internal image-reference" href="_images/fit_decimated.jpg"><img alt="_images/fit_decimated.jpg" src="_images/fit_decimated.jpg" style="width: 65%;" /></a>
-<p class="caption"><span class="caption-text">Assimilation validation with decimated observations: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of only 31 of the stations used in making the original field (10%).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
-</div>
-</div>
+<figcaption>
+<p><span class="caption-text">Assimilation validation with decimated observations: top left - original field, top right - generator output at the latent-space location that maximises fit to pseudo-observations at the station locations, bottom left - difference, bottom right - scatter original::output. This uses the locations of only 31 of the stations used in making the original field (10%).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
 
 
             <div class="clearer"></div>

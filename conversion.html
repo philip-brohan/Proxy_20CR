@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Dataset to dataset conversion &#8212; Machine Learning for Data Assimilation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
@@ -39,17 +40,17 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="dataset-to-dataset-conversion">
+  <section id="dataset-to-dataset-conversion">
 <h1>Dataset to dataset conversion<a class="headerlink" href="#dataset-to-dataset-conversion" title="Permalink to this headline">¶</a></h1>
 <p>We’ve established a way to assimilate observations - using those observations to find the optimum location in latent space. It would be useful to do the same with things other than observations - in particular we would like to use weather forecasts: If we could generate an observational dataset from a weather forecast, we could make the observational dataset several days before the observations became available.</p>
 <p>This is essentially a dataset conversion problem - can we convert one gridded field into another? Here I’m going to use ERA5 as the input field, and HadUK-Grid as the target, but the same principle will apply to any pair. So again we need a conversion function <code class="docutils literal notranslate"><span class="pre">f()</span></code>, but this time it takes a gridded field as input:</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/f_ERA_to_field.jpg"><img alt="_images/f_ERA_to_field.jpg" src="_images/f_ERA_to_field.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>And again the trick is to put the latent space into the middle of the problem - we use our input field to specify a point in latent space, and then generate the target field from that point.</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/f_ERA_to_latent_to_field.jpg"><img alt="_images/f_ERA_to_latent_to_field.jpg" src="_images/f_ERA_to_latent_to_field.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>For the right hand half of the problem (generating from the latent space) we can use the generator (of HadUK-Grid Tmax) that we have <a class="reference internal" href="haduk-grid.html"><span class="doc">already trained</span></a>. We could just find the generator output that gives the closest match to the input dataset, but this is only the best thing to do if the input dataset is really good. Most input datasets will have biases - ERA5 clearly does in this example, in particular it’s relatively lower resolution means it’s missing much of the spatial structure in HadUK-Grid. so we can do better by re-using the whole VAE - we train an encoder to convert ERA5 input to latent space, and then use the generator to produce HadUK-Grid output. The encoder can then learn to allow for biases in ERA5.</p>
 <p>So the process is:</p>
 <div class="toctree-wrapper compound">
@@ -62,12 +63,14 @@
 <li class="toctree-l1"><a class="reference internal" href="models/conversion/validation.html">Validate the trained VAE</a></li>
 </ul>
 </div>
-<div class="figure align-center" id="id1" style="width: 85%">
+<figure class="align-center" id="id1" style="width: 85%">
 <a class="reference internal image-reference" href="_images/comparison.jpg"><img alt="_images/comparison.jpg" src="_images/comparison.jpg" style="width: 85%;" /></a>
-<p class="caption"><span class="caption-text">VAE validation: top left - original field, top centre - ERA5 source field, top right - generator output, bottom right - difference original::generator, bottom centre - difference ERA::generator bottom left - scatter plots.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-text">VAE validation: top left - original field, top centre - ERA5 source field, top right - generator output, bottom right - difference original::generator, bottom centre - difference ERA::generator bottom left - scatter plots.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>This is working pretty well - a plausible HadUK-Grid Tmax field is produced from the ERA5 Tmax field for the same day. And in this case the VAE is tool we want - it does the dataset conversion directly, we don’t need a separate optimisation step.</p>
-</div>
+</section>
 
 
             <div class="clearer"></div>

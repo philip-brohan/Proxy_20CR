@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Machine Learning for Data Assimilation &#8212; Machine Learning for Data Assimilation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
@@ -36,19 +37,19 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="machine-learning-for-data-assimilation">
+  <section id="machine-learning-for-data-assimilation">
 <h1>Machine Learning for Data Assimilation<a class="headerlink" href="#machine-learning-for-data-assimilation" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="https://reanalyses.org">Reanalysis</a> is awesome, but it’s very slow and very expensive. We can make it dramatically easier and cheaper with <a class="reference external" href="https://en.wikipedia.org/wiki/Machine_learning">Machine Learning</a>.</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/Intro_figure.jpg"><img alt="_images/Intro_figure.jpg" src="_images/Intro_figure.jpg" style="width: 95%;" /></a>
-</div>
-<div class="section" id="introduction">
+</figure>
+<section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>We would like to know the weather everywhere in the world, for every hour in the last 100 years at least. But for most times, and most places, we have no observations of the weather. So we need to use the observations we do have as efficiently as possible - we need to make each observation inform our estimates of the weather in places remote from the observation. A powerful technique for this is <a class="reference external" href="https://en.wikipedia.org/wiki/Data_assimilation">Data Assimilation (DA)</a> which starts from a model of the weather, and uses observations to constrain the state of the model. Using DA with <a class="reference external" href="https://en.wikipedia.org/wiki/General_circulation_model">General circulation Models (GCMs)</a> has been enormously successful, providing precise and accurate estimates of global weather, operational weather forecasts, comprehensive modern reanalyses such as <a class="reference external" href="https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5">ERA5</a> and long sparse-observation reanalyses such as the <a class="reference external" href="https://psl.noaa.gov/data/20thC_Rean/">Twentieth Century Reanalysis (20CR)</a>.
 But GCMs are complex to use and expensive to run. Reanalysis projects require specialist expertise and enormous quantities of supercomputer time, so this technology, despite its power, is not very widely used. We already know that that we can use Machine Learning (ML) to make <a class="reference external" href="https://brohan.org/ML_GCM/">fast approximations to a GCM</a>, can we extend this to do DA as well?</p>
 <p>Here I show that you can use a <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">Variational AutoEncoder (VAE)</a> to build a fast <a class="reference external" href="https://en.wikipedia.org/wiki/Generative_model#Deep_generative_models">deep generative model</a> linking physically-plausible weather fields to a complete, continuous, low-dimensional latent space. Data Assimilation can then be done by searching the latent space for the state that maximises the fit between the linked field and the observations. The DA process takes about 1 minute on a standard laptop.</p>
-</div>
-<div class="section" id="finding-an-atmospheric-state-that-matches-observations">
+</section>
+<section id="finding-an-atmospheric-state-that-matches-observations">
 <h2>Finding an atmospheric state that matches observations<a class="headerlink" href="#finding-an-atmospheric-state-that-matches-observations" title="Permalink to this headline">¶</a></h2>
 <p>Suppose we have a representation of the atmospheric state <span class="math notranslate nohighlight">\(w\)</span>, and some observations <span class="math notranslate nohighlight">\(y^o\)</span>. We’d like to know what values of <span class="math notranslate nohighlight">\(w\)</span> are consistent with <span class="math notranslate nohighlight">\(y^o\)</span> - we want the probability distribution function <span class="math notranslate nohighlight">\(p(w|y^o)\)</span> (or at least the value of <span class="math notranslate nohighlight">\(w\)</span> that maximises this probability - the best-estimate atmospheric state given the observations).</p>
 <p>From Bayes’ theorem:</p>
@@ -70,36 +71,36 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 </ul>
 <p>Modern <a class="reference external" href="https://en.wikipedia.org/wiki/General_circulation_model">GCMs</a> score very highly on the first of these points - they make very precise and accurate estimates of the atmospheric state vector - but nothing about them is cheap, or easy. On the other hand, simple statistical models can make fast samples of <span class="math notranslate nohighlight">\(w\)</span> and <span class="math notranslate nohighlight">\(p(w)\)</span> (and so allow fast estimates of the <span class="math notranslate nohighlight">\(w\)</span> that maximises <span class="math notranslate nohighlight">\(p(w|y^o)\)</span>) but the quality of the atmospheric states they produce are unsatisfactory.</p>
 <p>Modern <a class="reference external" href="https://en.wikipedia.org/wiki/Machine_learning">Machine Learning (ML)</a> offers us the chance to square this circle: simple <span class="math notranslate nohighlight">\(p(w)\)</span>, fast estimates of <span class="math notranslate nohighlight">\(w\)</span> (and so <span class="math notranslate nohighlight">\(p(w|y^o)\)</span>), and good quality atmospheric state estimates. Speed, accuracy, and precision.</p>
-</div>
-<div class="section" id="a-concrete-example-2-metre-air-temperature">
+</section>
+<section id="a-concrete-example-2-metre-air-temperature">
 <h2>A concrete example: 2-metre air temperature<a class="headerlink" href="#a-concrete-example-2-metre-air-temperature" title="Permalink to this headline">¶</a></h2>
 <p>As a concrete example, we will use not the whole weather state vector, but just the 2-metre air temperature anomaly (as our <span class="math notranslate nohighlight">\(w\)</span>). And we will use station observations of 2-metre temperature to constrain it.  So there is some function <span class="math notranslate nohighlight">\(f()\)</span> where:</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/f_obs_map_to_field.jpg"><img alt="_images/f_obs_map_to_field.jpg" src="_images/f_obs_map_to_field.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>Or</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/f_obs_txt_to_field.jpg"><img alt="_images/f_obs_txt_to_field.jpg" src="_images/f_obs_txt_to_field.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>Where each <span class="math notranslate nohighlight">\(o\)</span> is a triplet of (lat, lon, T2m anomaly) and <span class="math notranslate nohighlight">\(n\)</span> is a variable - we need to be able to use any number of observations. The challenge is to use ML to make a suitable <span class="math notranslate nohighlight">\(f()\)</span>, that is, one where <span class="math notranslate nohighlight">\(f(y^o) = w^o\)</span>, where <span class="math notranslate nohighlight">\(w^o\)</span> is the value of <span class="math notranslate nohighlight">\(w\)</span> that maximises <span class="math notranslate nohighlight">\(p(w|y^o)\)</span></p>
 <p>This example has the virtue that the observations operator <span class="math notranslate nohighlight">\(H(w)\)</span> is very simple - we just interpolate <span class="math notranslate nohighlight">\(w\)</span> to the locations of the observations. Also we can reasonably assume the observations errors are constant and uncorrelated, so maximising <span class="math notranslate nohighlight">\(p(y^o|w)\)</span> is the same as minimising the RMS difference between <span class="math notranslate nohighlight">\(H(w)\)</span> and <span class="math notranslate nohighlight">\(y^o\)</span>. That is, between the observations and the field <span class="math notranslate nohighlight">\(w\)</span> at the locations of the observations.</p>
-</div>
-<div class="section" id="generative-model-and-latent-space">
+</section>
+<section id="generative-model-and-latent-space">
 <h2>Generative model, and latent space<a class="headerlink" href="#generative-model-and-latent-space" title="Permalink to this headline">¶</a></h2>
 <p>Traditionally, we would use a GCM to generate plausible temperature fields (<span class="math notranslate nohighlight">\(w\)</span>). Here, we are going to replace the GCM with a generative model: We need a model <span class="math notranslate nohighlight">\(w=g(x)\)</span>, where a cheap and simple prior input distribution <span class="math notranslate nohighlight">\(p(x)\)</span> produces a wide range of good quality output temperature fields (the same sort of output a good GCM might produce, or that we see in observations).</p>
 <p>So let’s say that the model state vector <span class="math notranslate nohighlight">\(x\)</span> has 100-elements, and the prior <span class="math notranslate nohighlight">\(p(x)\)</span> is a multivariate normal distribution with mean 0 and variance 1.</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/g_ls_to_t2m.jpg"><img alt="_images/g_ls_to_t2m.jpg" src="_images/g_ls_to_t2m.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>This function is called a generator, and the  inputs <span class="math notranslate nohighlight">\(x\)</span> form a vector in 100-dimensional space (the <em>latent space</em>). There are three additional requirements on <span class="math notranslate nohighlight">\(g()\)</span>: We want to be able to perturb the state, so it must be continuous - a small change in the latent space (<span class="math notranslate nohighlight">\(x\)</span>) must result in a small change in the output (<span class="math notranslate nohighlight">\(w\)</span>). We want to sample freely from the prior, so it must be complete - any point in the latent space (sampled from the prior) must map into a plausible temperature anomaly field. And it must be <em>fast</em> (otherwise, we could just use a GCM).</p>
 <p>This function is specified to meet the three requirements above (good quality <span class="math notranslate nohighlight">\(w\)</span>, cheap and easy <span class="math notranslate nohighlight">\(p(w)\)</span>, and cheap and easy <span class="math notranslate nohighlight">\(p(y^o|w)\)</span>). It would be almost impossible to code a function meeting this specification, but we don’t have to write the function, we can <em>learn</em> it.</p>
-</div>
-<div class="section" id="learning-a-generator-with-a-variational-autoencoder">
+</section>
+<section id="learning-a-generator-with-a-variational-autoencoder">
 <h2>Learning a generator with a Variational AutoEncoder<a class="headerlink" href="#learning-a-generator-with-a-variational-autoencoder" title="Permalink to this headline">¶</a></h2>
 <p>We can create a generator with exactly these properties, using a <a class="reference external" href="https://en.wikipedia.org/wiki/Variational_autoencoder">Variational AutoEncoder (VAE)</a>. An autoencoder is a pair of neural nets: one of them (the encoder) compresses an input field into a low-dimensional latent space, and the other (the generator) expands the small latent space representation back into the input field. They are trained as a pair - optimising to make generator(encoder(input)) as close to the original input as possible. A variational autoencoder adds two complications to the basic autoencoder: The encoder outputs a distribution in latent space not a point (the distribution is parametrized by its mean <span class="math notranslate nohighlight">\(m\)</span> and standard deviation <span class="math notranslate nohighlight">\(s\)</span>) and it is trained not just to produce the desired output, but also to produce the desired distribution in latent space (<span class="math notranslate nohighlight">\(p(x)\)</span>) - a multi-variate unit normal distribution.</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/DCVAE.jpg"><img alt="_images/DCVAE.jpg" src="_images/DCVAE.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="model.html">Details: Building and training the VAE</a></li>
@@ -113,21 +114,23 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 <li><p>It is fast because the generator is implemented as a <a class="reference external" href="https://en.wikipedia.org/wiki/Convolutional_neural_network">convolutional neural net (CNN)</a>. (It runs in much less than one second).</p></li>
 </ul>
 <p>So as long as as the VAE can be trained successfully on good quality data (examples of the sort of <span class="math notranslate nohighlight">\(w\)</span> that we want it to produce), the generator learned by the VAE will be exactly the function <span class="math notranslate nohighlight">\(g()\)</span> that we need. And it does work: training a simple VAE on 40 years of daily T2m anomalies (from ERA5) gives decent results after only about 10 minutes (on a single v100 GPU).</p>
-<div class="figure align-center" id="id3" style="width: 95%">
+<figure class="align-center" id="id3" style="width: 95%">
 <a class="reference internal image-reference" href="_images/DCVAE_validation.jpg"><img alt="_images/DCVAE_validation.jpg" src="_images/DCVAE_validation.jpg" style="width: 95%;" /></a>
-<p class="caption"><span class="caption-text">VAE validation: top left - original field, top right - generator output, bottom left - difference, bottom right - scatter original::output. (Note that a substantially better result could be produced with more model-building effort and a larger latent space, but this is good enough for present purposes).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-text">VAE validation: top left - original field, top right - generator output, bottom left - difference, bottom right - scatter original::output. (Note that a substantially better result could be produced with more model-building effort and a larger latent space, but this is good enough for present purposes).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>The VAE is serving as a generator factory - learning a generator function <span class="math notranslate nohighlight">\(g()\)</span> that has all the properties we need, from observations of the weather variable of interest (T2m anomalies from ERA5).</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/DCVAE_to_g_latent.jpg"><img alt="_images/DCVAE_to_g_latent.jpg" src="_images/DCVAE_to_g_latent.jpg" style="width: 95%;" /></a>
-</div>
-</div>
-<div class="section" id="assimilating-through-the-latent-space">
+</figure>
+</section>
+<section id="assimilating-through-the-latent-space">
 <h2>Assimilating through the latent space<a class="headerlink" href="#assimilating-through-the-latent-space" title="Permalink to this headline">¶</a></h2>
 <p>But we don’t want <span class="math notranslate nohighlight">\(g()\)</span> - the function making a weather field from a latent space vector; we want <span class="math notranslate nohighlight">\(f()\)</span> - a function making a weather field from a variable set of observations. The virtue of having <span class="math notranslate nohighlight">\(g()\)</span>, is that it allows us to convert the problem from finding a weather field that matches the observations, to finding a point in latent space that generates a weather field that matches the observations - we map observations to latent space vector to field. That is, we can look for the solution in the latent space, rather than in the real-space weather field.</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/f_obs_to_latent_to_field.jpg"><img alt="_images/f_obs_to_latent_to_field.jpg" src="_images/f_obs_to_latent_to_field.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <p>We want to find the value of <span class="math notranslate nohighlight">\(w\)</span> which maximises:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}p(w|y^o) &amp; = p(y^o|w)p(w)/p(y^o) \\
@@ -138,9 +141,9 @@ But GCMs are complex to use and expensive to run. Reanalysis projects require sp
 \[\exp(-{1\over2}(y^o-H(g(x)))^2)p(g(x)|x)p(x)\]</div>
 <p>We have <span class="math notranslate nohighlight">\(g(x)\)</span> - the generator we learned with the VAE; <span class="math notranslate nohighlight">\(p(w=g(x)|x)\approx 1\)</span>; <span class="math notranslate nohighlight">\(p(x)\)</span> is a unit normal distribution; and <span class="math notranslate nohighlight">\(H(g(x))\)</span> is very simple - we just interpolate the generator output to the locations of the observations. So we can calculate this for any <span class="math notranslate nohighlight">\(x\)</span> and finding the maximum is just a matter of optimisation.
 Because <span class="math notranslate nohighlight">\(g(x)\)</span> is fast, complete, and continuous (by design), it’s an <em>easy</em> optimisation problem - we can use <a class="reference external" href="https://en.wikipedia.org/wiki/Gradient_descent">gradient descent</a>. For this example (100-dimensional latent space representation of T2m, fit to a few thousand observations), it takes only about 100 iterations (i.e. about 100 calls of the generator), and about one minute on a standard laptop (no GPU).</p>
-<div class="figure align-center" style="width: 95%">
+<figure class="align-center" style="width: 95%">
 <a class="reference internal image-reference" href="_images/Optimiser.jpg"><img alt="_images/Optimiser.jpg" src="_images/Optimiser.jpg" style="width: 95%;" /></a>
-</div>
+</figure>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="optimiser.html">Details: DA by optimisation in latent space</a></li>
@@ -148,14 +151,16 @@ Because <span class="math notranslate nohighlight">\(g(x)\)</span> is fast, comp
 </div>
 <p>This optimisation search provides our function <span class="math notranslate nohighlight">\(f()\)</span> and it is simple to extend it to provide uncertainty estimates as well. Call the function several times with different starting guesses for the latent space vector <span class="math notranslate nohighlight">\(x\)</span> (and, if desired, perturbations to the observations to account for their uncertainty), and the resulting ensemble of real space fields provides a sample constrained by the observations.</p>
 <p>To check that it works, we can make some pseudo-observations from a known field, and see how well we can recover the original field from just the observations:</p>
-<div class="figure align-center" id="id4" style="width: 95%">
+<figure class="align-center" id="id4" style="width: 95%">
 <a class="reference internal image-reference" href="_images/fit_1969.jpg"><img alt="_images/fit_1969.jpg" src="_images/fit_1969.jpg" style="width: 95%;" /></a>
-<p class="caption"><span class="caption-text">Assimilation validation: bottom - original field (ERA5 T2m anomaly), top - assimilation results. Black dots mark observations assimilated, grey hatching marks regions where the result is very uncertain.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-text">Assimilation validation: bottom - original field (ERA5 T2m anomaly), top - assimilation results. Black dots mark observations assimilated, grey hatching marks regions where the result is very uncertain.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>This process works as expected. We can reconstruct the weather field precisely in regions where we have observations, and with uncertainty in regions where observations are unavailable.</p>
 <p>It’s not just 2-metre air temperature - the same approach can be used over a wide range of applications.</p>
-</div>
-<div class="section" id="examples-of-use">
+</section>
+<section id="examples-of-use">
 <h2>Examples of use<a class="headerlink" href="#examples-of-use" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -166,8 +171,8 @@ Because <span class="math notranslate nohighlight">\(g(x)\)</span> is fast, comp
 </ul>
 </div>
 <p>How far can we go with this method? In principle the same method could be used for very large and complex sets of weather and observation fields (including satellite radiances). We can be confident that suitable generator functions are possible because they would be neural network approximations to GCMs that already exist. But it’s not yet clear how difficult it would be to train such functions.</p>
-</div>
-<div class="section" id="conclusions">
+</section>
+<section id="conclusions">
 <h2>Conclusions<a class="headerlink" href="#conclusions" title="Permalink to this headline">¶</a></h2>
 <p>Machine Learning makes data assimilation easy, cheap, and fast.</p>
 <p>Data assimilation means finding a weather field <span class="math notranslate nohighlight">\(w\)</span> that is the best fit to a set of observations <span class="math notranslate nohighlight">\(y^o\)</span>. This means maximising</p>
@@ -178,8 +183,8 @@ Because <span class="math notranslate nohighlight">\(g(x)\)</span> is fast, comp
 <div class="math notranslate nohighlight">
 \[p(y^o|x)p(x)\]</div>
 <p>is straightforward. Producing such a function <span class="math notranslate nohighlight">\(g()\)</span> by traditional methods would be extraordinarily difficult, but we can <em>learn</em> such a function quite easily, with a Variational Autoencoder trained on observations.</p>
-</div>
-<div class="section" id="small-print">
+</section>
+<section id="small-print">
 <h2>Small print<a class="headerlink" href="#small-print" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -188,8 +193,8 @@ Because <span class="math notranslate nohighlight">\(g(x)\)</span> is fast, comp
 </ul>
 </div>
 <p>This document is crown copyright (2022). It is published under the terms of the <a class="reference external" href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/">Open Government Licence</a>. Source code included is published under the terms of the <a class="reference external" href="https://opensource.org/licenses/BSD-2-Clause">BSD licence</a>.</p>
-</div>
-</div>
+</section>
+</section>
 
 
             <div class="clearer"></div>

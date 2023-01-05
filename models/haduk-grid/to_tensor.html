@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>HadUK-Grid Tmax - convert the data into tf.Tensors &#8212; Machine Learning for Data Assimilation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css" />
@@ -40,7 +41,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="haduk-grid-tmax-convert-the-data-into-tf-tensors">
+  <section id="haduk-grid-tmax-convert-the-data-into-tf-tensors">
 <h1>HadUK-Grid Tmax - convert the data into tf.Tensors<a class="headerlink" href="#haduk-grid-tmax-convert-the-data-into-tf-tensors" title="Permalink to this headline">¶</a></h1>
 <p>Script to make a tensor from a single day’s data:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
@@ -112,7 +113,7 @@
 <span class="n">t</span> <span class="o">=</span> <span class="n">HUKG_trim</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 
 <span class="c1"># Convert to Tensor</span>
-<span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
 <span class="n">ict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># Write to file</span>
@@ -140,13 +141,7 @@
 <span class="k">def</span> <span class="nf">is_done</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
     <span class="n">op_file_name</span> <span class="o">=</span> <span class="p">(</span>
         <span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/Proxy_20CR/datasets/haduk-grid/daily_maxtemp/&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%04d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">-</span><span class="si">%02d</span><span class="s2">.tfd&quot;</span><span class="p">)</span>
-    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span>
-        <span class="n">group</span><span class="p">,</span>
-        <span class="n">year</span><span class="p">,</span>
-        <span class="n">month</span><span class="p">,</span>
-        <span class="n">day</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">group</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,)</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">op_file_name</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="kc">False</span>
@@ -161,34 +156,18 @@
 <span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="k">while</span> <span class="n">current_day</span> <span class="o">&lt;=</span> <span class="n">end_day</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">count</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
-            <span class="s2">&quot;test&quot;</span><span class="p">,</span>
-        <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span><span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,):</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;./make_training_tensor.py --year=</span><span class="si">%d</span><span class="s2"> --month=</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot; --day=</span><span class="si">%d</span><span class="s2"> --test </span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,)</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span><span class="p">(</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-            <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
-            <span class="s2">&quot;training&quot;</span><span class="p">,</span>
+            <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="s2">&quot;training&quot;</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;./make_training_tensor.py --year=</span><span class="si">%d</span><span class="s2"> --month=</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot; --day=</span><span class="si">%d</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
-                <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">current_day</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">current_day</span><span class="o">.</span><span class="n">day</span><span class="p">,)</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
     <span class="n">current_day</span> <span class="o">=</span> <span class="n">current_day</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -196,7 +175,7 @@
 <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
+</section>
 
 
             <div class="clearer"></div>

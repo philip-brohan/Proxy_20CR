@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>HadUK-Grid Tmax - get the training data &#8212; Machine Learning for Data Assimilation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css" />
@@ -40,7 +41,7 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="haduk-grid-tmax-get-the-training-data">
+  <section id="haduk-grid-tmax-get-the-training-data">
 <h1>HadUK-Grid Tmax - get the training data<a class="headerlink" href="#haduk-grid-tmax-get-the-training-data" title="Permalink to this headline">¶</a></h1>
 <p>Ideally I’d put in here a script to download the training data to use. This time, however, I cheated and used pre-prepared data provided by a colleague at the Met Office (thanks Mark). So you are on your own for this one.</p>
 <p>You can get the data I used from <a class="reference external" href="https://catalogue.ceda.ac.uk/uuid/4dc8450d889a491ebb20e724debe2dfb">CEDA</a> but I don’t have a pre-prepared script for it. (Download the daily Tmax, and the monthly Tmax climatology).</p>
@@ -77,6 +78,7 @@
     <span class="n">hdata</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">load_cube</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">hdata</span>
 
+
 <span class="k">def</span> <span class="nf">HUKG_load_observations</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">year</span> <span class="o">&gt;</span> <span class="mi">2018</span><span class="p">:</span>
         <span class="n">dirname</span> <span class="o">=</span> <span class="p">(</span>
@@ -90,9 +92,11 @@
         <span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SCRATCH&quot;</span><span class="p">),</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
     <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%02d</span><span class="s2">.nc&quot;</span> <span class="o">%</span> <span class="n">day</span>
     <span class="n">nc</span> <span class="o">=</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;projection_x_coordinate&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;projection_x_coordinate&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-            <span class="s1">&#39;projection_y_coordinate&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;projection_y_coordinate&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-            <span class="s1">&#39;Tmax&#39;</span><span class="p">:</span><span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;daily_maxtemp&#39;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;projection_x_coordinate&quot;</span><span class="p">:</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">&quot;projection_x_coordinate&quot;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+        <span class="s2">&quot;projection_y_coordinate&quot;</span><span class="p">:</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">&quot;projection_y_coordinate&quot;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+        <span class="s2">&quot;Tmax&quot;</span><span class="p">:</span> <span class="n">nc</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">&quot;daily_maxtemp&quot;</span><span class="p">][:]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="c1"># Get an approximate daily climatology from the HadUKGrid monthlies</span>
@@ -130,7 +134,7 @@
     <span class="k">return</span> <span class="n">hdata</span>
 </pre></div>
 </div>
-</div>
+</section>
 
 
             <div class="clearer"></div>
